@@ -425,3 +425,76 @@ Builds `apps/server/dist`, copies it to
 `${NOTES_ENGINE_DIR:-~/apps/office-forks/trilium-engines}/<upstream>_tf.<suffix>/` with a
 `tf-version.json`, and moves `manifest.json`'s `current` to `previous`. `TF_SKIP_BUILD=1` installs
 the existing build.
+
+## Taskforce Notes, the desktop app (`TF_DESKTOP=1`)
+
+An Electron build of this fork that keeps the notes of one Taskforce notebook on a Mac and syncs
+them with the engine through the notes gateway. The contract (connect flow, gateway routes, the
+update feed, the build folder) is `infra/notes/DESKTOP.md` in the Taskforce repository.
+
+The flavour is baked in at build time (`scripts/build-utils.ts` `tfDesktopDefines()`): with
+`TF_DESKTOP` unset at build time every hook below is a no-op and the desktop app is upstream's.
+
+- Own name, bundle id (`TF_DESKTOP_BUNDLE_ID`, default `org.triliumtf.notes`), data folder
+  (`~/Library/Application Support/Taskforce Notes`, `TF_NOTES_DATA_DIR` for tests), port 37851
+  (`TF_NOTES_PORT`) and URL scheme `taskforce-notes:`, so it runs next to a stock Trilium.
+  `apps/server/src/tf/desktop_env.ts` claims the folder inside `data_dir.ts`, before anything
+  resolves it, and refuses any folder of a stock Trilium.
+- Connect screen (`apps/client/src/tf/desktop/connect.tsx`) while there is no device key: paste
+  or open a connect link, the gateway's `update` answer decides the screen (ready, another app
+  version, bring the notes of the Trilium app on this Mac along), `redeem` gives the device key and
+  the seed, and the first sync runs as upstream's. A link of another notebook keeps the notes here
+  as a backup file in `backup/` and restarts empty.
+- Bringing the Trilium notes along: the stock database is copied byte for byte into a private
+  staging copy (a read-only SQLite open of a WAL database writes side files next to it), written
+  out with the SQLite backup API and sent to `POST /__tf/desktop/replace` in parts of 64 MiB.
+- Every sync request carries `x-tf-device`; `/api/setup/status` is skipped on login (the gateway
+  passes the sync routes only). A 401 `device_revoked`, a 403 `not_eligible` or another sync
+  version stops the sync loop until the person acts; the client shows a notice.
+- The device key and its companions (`tfDeviceToken`, `tfDeviceId`, `tfNotebookName`,
+  `tfUserName`, `tfLastSyncAt`) are not-synced options, never readable through `/api/options`,
+  and a pulled change to them is dropped.
+- Settings > Sync shows the connection and "Disconnect this Mac"; upstream's update check and
+  proxy settings are hidden. Updates come from the notebook (Squirrel.Mac,
+  `<notebook>/__tf/desktop/squirrel?build=N` with `x-tf-device`), at start and hourly.
+- No UI text shows an address, a link, a file path or a raw error: the main process logs them.
+
+| File | Hook |
+|---|---|
+| `apps/desktop/src/main.ts` | `./tf/prelude` first; `initTfDesktopMain()`, `handleTfSecondInstance()`, `tfDesktopOnReady()` |
+| `apps/desktop/src/app-info.ts`, `apps/desktop/scripts/build.ts`, `apps/desktop/electron-forge/forge.config.ts` | product name, packager config (bundle id, build number, scheme, signing) |
+| `apps/desktop/src/preload.ts`, `packages/commons/src/lib/electron_api_interface.ts` | `window.electronApi.tfDesktop` |
+| `apps/desktop/src/services/window.ts` | `getSetupWindow()` |
+| `apps/server/src/services/data_dir.ts` | `claimTfDesktopEnv()` |
+| `apps/server/src/services/request.ts`, `packages/trilium-core/src/services/request.ts` | `ExecOpts.headers`; the gateway's `{ error }` in the message |
+| `apps/server/src/routes/index.ts` | `tfDesktop` in the Electron renderer's bootstrap |
+| `packages/trilium-core/src/services/sync.ts`, `setup.ts`, `sync_options.ts`, `sync_update.ts` | device key header, sync stop, no `setup/status`, dropped option changes |
+| `apps/client/src/index.ts`, `desktop.ts` | connect screen entry, notices |
+| `apps/client/src/widgets/type_widgets/ContentWidget.tsx`, `options/other.tsx`, `widgets/buttons/global_menu.tsx` | Settings > Sync page, no upstream update check |
+| `scripts/build-utils.ts` | `tfDesktopDefines()` |
+
+Tests:
+
+```bash
+(cd apps/desktop && ../../node_modules/.bin/vitest run src/tf/)    # link, gateway, updater, stock copy, fresh start, flavour
+(cd apps/server && ../../node_modules/.bin/vitest run src/tf/desktop_env ../../packages/trilium-core/src/tf/desktop)
+(cd apps/standalone && ../../node_modules/.bin/vitest run tf/desktop)   # core on sqlite-wasm
+(cd apps/client && ../../node_modules/.bin/vitest run src/tf/desktop)
+```
+
+End to end, against a stock engine behind a stand-in for the gateway, with a throwaway "stock
+Trilium" database, every screen photographed in the light and the dark appearance with a contrast
+reading:
+
+```bash
+TF_DESKTOP=1 TF_DESKTOP_BUILD=1 pnpm --filter desktop build
+node apps/desktop/e2e-tf/run.mjs <work dir> <engine port> <stock port> <gateway port> <app port>
+```
+
+Signed and notarized build (macOS arm64), written to `apps/desktop/out/tf-desktop/<version>/`
+with `meta.json`:
+
+```bash
+TF_DESKTOP_BUILD=<n> TF_SIGN_IDENTITY="Developer ID Application: …" TF_NOTARY_PROFILE=<profile> \
+    node scripts/tf-desktop-build.mjs [--out <dir>] [--unsigned]
+```
