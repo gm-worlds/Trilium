@@ -32,6 +32,10 @@ const LAYOUTS = arg("layout", "both") === "both" ? [ "phone", "tablet" ] : [ arg
 const JSON_OUT = arg("json", null);
 const QUIET = process.argv.includes("--quiet");
 const SHOTS = arg("shots", null);
+/** `--font <family>`: the same route in another typeface. Phones and Linux have wider system fonts than macOS. */
+const FONT = arg("font", null);
+/** `--css <file>`: an extra stylesheet in the frame, to try a fix before a build. */
+const EXTRA_CSS = arg("css", null);
 
 /** Elements left out of the audit, with the reason in `tf-touch-audit.mjs`'s header. */
 const EXCLUDE = [
@@ -47,6 +51,17 @@ try {
     for (const layout of LAYOUTS) {
         const session = await openNotebook(browser, { as: "alice", layout });
         const { frame, page } = session;
+        if (FONT) {
+            await frame.evaluate((family) => {
+                for (const name of [ "--main-font-family", "--detail-font-family", "--tree-font-family" ]) {
+                    document.documentElement.style.setProperty(name, family);
+                    document.body.style.setProperty(name, family);
+                }
+            }, FONT);
+        }
+        if (EXTRA_CSS) {
+            await frame.addStyleTag({ content: fs.readFileSync(EXTRA_CSS, "utf-8") });
+        }
         const ids = await ensureFixtures(frame);
         const demo = Object.fromEntries((await findNotes(frame, "note.type = canvas or note.type = mindMap or #viewType=calendar"))
             .map((n) => [ n.type === "book" ? "calendar" : n.type, n.noteId ]));

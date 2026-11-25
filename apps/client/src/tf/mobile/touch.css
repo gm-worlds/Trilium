@@ -248,6 +248,13 @@
         box-sizing: border-box;
         min-height: var(--tf-hit);
         padding-block: 4px;
+        /* A one-line item is centred in its 44 px, so the zone around its checkbox stays inside it in any font. */
+        padding-block: max(4px, calc((var(--tf-hit) - 1lh) / 2));
+    }
+
+    /* The zone around the first and the last checkbox stays inside the list. */
+    .note-detail-editable-text .ck-content .todo-list {
+        padding-block: 2px;
     }
 
     .note-detail-editable-text .ck-content .todo-list input[type="checkbox"] {
@@ -259,11 +266,38 @@
         position: relative;
         margin-inline-start: 6px;
 
+        /* Centred on the wrapper and never under 44 px: the wrapper's own height follows the font. */
         &::before {
             content: "";
             position: absolute;
-            inset: -14px;
+            left: 50%;
+            top: 50%;
+            width: max(100%, var(--tf-hit));
+            height: max(100%, var(--tf-hit));
+            transform: translate(-50%, -50%);
         }
+    }
+
+    /*
+     * Wider system fonts (Android, Linux) than the one this was drawn in: the title row's buttons
+     * keep their width, because their hit areas sit edge to edge, and a collection's header tools
+     * stay inside the screen, with the filter box giving way first.
+     */
+    .title-row :is(.toggle-sidebar-button, .note-icon-widget) {
+        flex-shrink: 0;
+    }
+
+    .collection-properties :is(.right-container, .board-header-tools) {
+        min-width: 0;
+    }
+
+    .collection-properties .board-header-tools > :not(.collection-filter) {
+        flex-shrink: 0;
+    }
+
+    .collection-properties .board-header-tools > .collection-filter {
+        flex: 0 1 auto;
+        min-width: 0;
     }
 
     /* At phone width the zoom group sits above the centred edit group instead of beside it. */

@@ -435,7 +435,11 @@ async function textChecks(session, ids) {
         text: document.getSelection()?.toString() ?? "",
         menu: document.body.classList.contains("context-menu-shown")
     }));
-    check("a long press in a paragraph selects a word and opens no Trilium menu", selection.text.trim().length > 0 && !selection.menu, JSON.stringify(selection));
+    // The word selection is the browser's own. Desktop Chrome on Linux has none on a long press, so
+    // there the check is only that no Trilium menu opens.
+    const browserSelects = process.platform !== "linux";
+    check(`a long press in a paragraph ${browserSelects ? "selects a word and " : ""}opens no Trilium menu`,
+        (!browserSelects || selection.text.trim().length > 0) && !selection.menu, JSON.stringify(selection));
 
     const second = await paragraphBox(frame, "second paragraph");
     await touch.tap(second.left + 40, second.top + 8);
@@ -900,7 +904,15 @@ async function tabletChecks(ids) {
 }
 
 function auditCheck() {
-    const run = spawnSync(process.execPath, [ path.join(here, "tf-touch-audit.mjs"), "--quiet" ], { encoding: "utf-8", timeout: 600_000 });
-    const summary = /SUMMARY (.*)/.exec(run.stdout ?? "")?.[1] ?? "no summary";
-    check("no interactive element under 44 px on the audited route (tf-touch-audit.mjs)", run.status === 0, summary);
+    // Twice: in the system font, and in a wide one (Android's and Linux's fonts run wider than macOS's).
+    for (const [ label, extra ] of [ [ "the system font", [] ], [ "a wide font", [ "--font", "Verdana, DejaVu Sans, sans-serif" ] ] ]) {
+        const run = spawnSync(process.execPath, [ path.join(here, "tf-touch-audit.mjs"), ...extra ], { encoding: "utf-8", timeout: 600_000 });
+        const summary = /SUMMARY (.*)/.exec(run.stdout ?? "")?.[1] ?? "no summary";
+        check(`no interactive element under 44 px or overlapping on the audited route, in ${label} (tf-touch-audit.mjs)`, run.status === 0, summary);
+        if (run.status !== 0) {
+            // What and where, so a failure on another machine can be read from its log.
+            const lines = (run.stdout ?? "").split("\n");
+            console.log(lines.filter((l, i) => /^ {4}(small|overlap|hover) |ERROR/.test(l) || (/^\[/.test(l) && /^ {4}/.test(lines[i + 1] ?? ""))).join("\n"));
+        }
+    }
 }
