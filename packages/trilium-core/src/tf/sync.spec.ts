@@ -6,6 +6,7 @@ import * as cls from "../services/context.js";
 import notes from "../services/notes.js";
 import { getSql } from "../services/sql/index.js";
 import syncUpdateService from "../services/sync_update.js";
+import { encodeBase64 } from "../services/utils/binary.js";
 import { setTfEventSink, type TfEvent } from "./events.js";
 import { enableTfEmbed, setTfUser } from "./identity.js";
 import { tfAcceptSyncedEntity } from "./sync.js";
@@ -61,7 +62,7 @@ describe("tf sync from a desktop app", () => {
         received = [];
         const blobId = `tfblob${counter}`;
         apply([
-            { entityChange: ec("blobs", blobId), entity: { blobId, content: "<p>new</p>", dateModified: NOW_ISH, utcDateModified: NOW_ISH } as unknown as EntityRow },
+            { entityChange: ec("blobs", blobId), entity: { blobId, content: encodeBase64("<p>new</p>"), dateModified: NOW_ISH, utcDateModified: NOW_ISH } as unknown as EntityRow },
             { entityChange: ec("notes", noteId, "2098-01-01 00:00:01.000Z"), entity: noteRow(noteId, { blobId, title: "Renamed on the Mac" }) }
         ]);
         expect(received.map((e) => e.kind)).toEqual([ "note.content" ]);
