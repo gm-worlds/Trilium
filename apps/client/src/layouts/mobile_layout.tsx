@@ -3,6 +3,8 @@ import "./mobile_layout.css";
 import type AppContext from "../components/app_context.js";
 import type { WidgetsByParent } from "../services/bundle.js";
 import { TaskforceButton, TfProtectedNotice } from "../tf/components.js"; // tf:
+import { TfNoteWorkBadges } from "../tf/work/WorkComponents.js"; // tf:
+import { TfTeamSlot } from "../tf/team/hooks.js"; // tf:
 import GlobalMenuWidget from "../widgets/buttons/global_menu.js";
 import CloseZenModeButton from "../widgets/close_zen_button.js";
 import NoteList from "../widgets/collections/NoteList.jsx";
@@ -79,6 +81,8 @@ export default class MobileLayout {
                                                 .child(<NoteTitleWidget />)
                                                 .child(<NoteBadges />)
                                                 .child(<TfProtectedNotice />) // tf: protected notes opened by someone else
+                                                .child(<TfTeamSlot name="title-row" />) // tf: presence, turn bar, comment markers
+                                                .child(<TfNoteWorkBadges />) // tf: bell with the note's open reminders
                                                 .child(<MobileNotePanel widgetsByParent={this.customWidgets} />)
                                                 .child(<MobileDetailMenu />)
                                         )

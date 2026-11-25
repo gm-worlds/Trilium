@@ -7,7 +7,9 @@
  * (no drop on the node itself or below it) are applied before `dragEnter()`, as `dnd5` does.
  *
  * Hold 350 ms to lift; let go without moving for the context menu; held 600 ms over a closed folder,
- * it opens. A toast with "Undo" follows every move.
+ * it opens. A toast with "Undo" follows every move. `touchstart` is passive and the other touch
+ * listeners exist only while a node is pressed or lifted (`touch_session.ts`), so scrolling the tree
+ * never waits for them.
  */
 import ws from "../../services/ws.js";
 import { tfHaptic } from "../bridge.js";
@@ -15,6 +17,7 @@ import { AutoScroller, DragGhost, InsertionLine, scrollParentOf } from "./drag_v
 import { LIFT_DELAY_MS, movedBeyond, type Point } from "./gestures.js";
 import { offerUndo, type PreparedUndo, prepareUndo } from "./moves.js";
 import type { MoveOp } from "./reorder.js";
+import { GestureListeners, listenModeFor, lockScroll, preventIfCancelable, swallowNextClick } from "./touch_session.js";
 
 type HitMode = "before" | "after" | "over";
 
@@ -42,6 +45,7 @@ interface Drag {
     expandFor: Fancytree.FancytreeNode | null;
     insideSpan: HTMLElement | null;
     moved: boolean;
+    unlock: () => void;
 }
 
 type State =
@@ -52,13 +56,15 @@ type State =
 const AUTO_EXPAND_MS = 600;
 let state: State = { kind: "idle" };
 let allowContextMenu = false;
+const listeners = new GestureListeners({ move: onTouchMove, end: onTouchEnd, cancel: () => cancel() });
+
+function setState(next: State) {
+    state = next;
+    listeners.set(listenModeFor(next.kind === "drag" ? "owned" : next.kind));
+}
 
 export function installTreeDrag(isTouch: () => boolean) {
-    const capture = { capture: true, passive: false } as const;
-    document.addEventListener("touchstart", (e) => onTouchStart(e, isTouch), capture);
-    document.addEventListener("touchmove", onTouchMove, capture);
-    document.addEventListener("touchend", onTouchEnd, capture);
-    document.addEventListener("touchcancel", () => cancel(), capture);
+    document.addEventListener("touchstart", (e) => onTouchStart(e, isTouch), { capture: true, passive: true });
     document.addEventListener("contextmenu", (e) => {
         if (state.kind !== "idle" && !allowContextMenu) {
             e.preventDefault();
@@ -111,7 +117,7 @@ function onTouchStart(e: TouchEvent, isTouch: () => boolean) {
     }
     const touch = e.touches[0];
     const start = { x: touch.clientX, y: touch.clientY };
-    state = { kind: "pressed", span, start, timer: window.setTimeout(() => lift(), LIFT_DELAY_MS) };
+    setState({ kind: "pressed", span, start, timer: window.setTimeout(() => lift(), LIFT_DELAY_MS) });
 }
 
 function onTouchMove(e: TouchEvent) {
@@ -123,11 +129,11 @@ function onTouchMove(e: TouchEvent) {
     if (state.kind === "pressed") {
         if (movedBeyond(state.start, point)) {
             clearTimeout(state.timer);
-            state = { kind: "idle" };
+            setState({ kind: "idle" });
         }
         return;
     }
-    e.preventDefault();
+    preventIfCancelable(e);
     e.stopPropagation();
     const drag = state.drag;
     drag.last = point;
@@ -144,14 +150,15 @@ function onTouchMove(e: TouchEvent) {
 function onTouchEnd(e: TouchEvent) {
     if (state.kind === "pressed") {
         clearTimeout(state.timer);
-        state = { kind: "idle" };
+        setState({ kind: "idle" });
         return;
     }
     if (state.kind !== "drag") {
         return;
     }
-    e.preventDefault();
+    preventIfCancelable(e);
     e.stopPropagation();
+    swallowNextClick();
     const drag = state.drag;
     if (!drag.moved) {
         finish(drag);
@@ -175,7 +182,7 @@ function lift() {
     const tree = treeOf(span);
     const dnd5 = tree && dnd5Of(tree);
     if (!node || !tree || !dnd5) {
-        state = { kind: "idle" };
+        setState({ kind: "idle" });
         return;
     }
 
@@ -195,7 +202,7 @@ function lift() {
         setDragImage() {}
     };
     if (!dnd5.dragStart(node, { node, tree, dataTransfer, options: tree.options })) {
-        state = { kind: "idle" };
+        setState({ kind: "idle" });
         return;
     }
 
@@ -217,9 +224,10 @@ function lift() {
         expandTimer: 0,
         expandFor: null,
         insideSpan: null,
-        moved: false
+        moved: false,
+        unlock: lockScroll(scrollElement)
     };
-    state = { kind: "drag", drag };
+    setState({ kind: "drag", drag });
 }
 
 function aim(drag: Drag) {
@@ -338,8 +346,9 @@ function finish(drag: Drag) {
     drag.line.remove();
     drag.span.classList.remove("tf-drag-source");
     drag.insideSpan?.classList.remove("tf-drop-inside");
+    drag.unlock();
     document.body.classList.remove("tf-dragging");
-    state = { kind: "idle" };
+    setState({ kind: "idle" });
 }
 
 function cancel() {
@@ -348,5 +357,5 @@ function cancel() {
     } else if (state.kind === "drag") {
         finish(state.drag);
     }
-    state = { kind: "idle" };
+    setState({ kind: "idle" });
 }

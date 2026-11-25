@@ -15,6 +15,8 @@ import {
     buildAiActionsMenuItem, buildSortSelectionMenuItem, getTextEditorAtSelection,
     getTextEditorContaining
 } from "./text_editor_context_menu.js";
+import { getTfTeamHook } from "../tf/team/hooks.js"; // tf:
+import { getTfWorkContextMenuItems } from "../tf/work/editor_host.js"; // tf:
 
 /** What the pointer was over when the menu was summoned. */
 export interface ContextMenuTarget {
@@ -180,6 +182,9 @@ export async function buildNoteContextMenuItems(
         items.push(aiActions, { kind: "separator" });
     }
 
+    const tfTeamItems = target.isEditable ? await getTfTeamHook("textMenuItems")?.(target.element) ?? [] : []; // tf: comment on the block
+    if (tfTeamItems.length) items.push(...tfTeamItems, { kind: "separator" }); // tf:
+
     if (tableSections) {
         items.push(...tableSections.main, { kind: "separator" });
     }
@@ -269,6 +274,8 @@ export async function buildNoteContextMenuItems(
     if (codeEditorItems) {
         items.push({ kind: "separator" }, ...codeEditorItems);
     }
+
+    items.push(...await getTfWorkContextMenuItems<CommandNames>(target)); // tf: Remind me, Make task
 
     if (hasText) {
         const { selectionText } = target;

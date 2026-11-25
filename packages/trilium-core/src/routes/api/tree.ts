@@ -5,6 +5,7 @@ import becca from "../../becca/becca.js";
 import { NotFoundError } from "../../errors.js";
 import { getLog } from "../../services/log.js";
 import type BNote from "../../becca/entities/bnote.js";
+import { getTfBranchExpanded } from "../../tf/expansion.js"; // tf: expansion per person
 
 function getNotesAndBranchesAndAttributes(_noteIds: string[] | Set<string>) {
     const noteIds = new Set(_noteIds);
@@ -96,7 +97,7 @@ function getNotesAndBranchesAndAttributes(_noteIds: string[] | Set<string>) {
             parentNoteId: branch.parentNoteId,
             notePosition: branch.notePosition,
             prefix: branch.prefix,
-            isExpanded: branch.isExpanded
+            isExpanded: getTfBranchExpanded(branch) // tf: the person's own state
         });
     }
 
@@ -183,7 +184,7 @@ function getTree(req: Request) {
 
             const childBranch = becca.getBranchFromChildAndParent(childNote.noteId, parentNote.noteId);
 
-            if (childBranch?.isExpanded) {
+            if (childBranch && getTfBranchExpanded(childBranch)) { // tf: the person's own state
                 collect(childBranch.childNote);
             }
         }

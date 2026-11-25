@@ -23,6 +23,7 @@ const EDITABLE = ".note-detail-editable-text .ck-editor__editable.ck-content";
 /** The CKEditor surface this module needs, typed loosely to keep CKEditor out of the bundle. */
 interface Editor {
     isReadOnly: boolean;
+    on(event: "change:isReadOnly", callback: () => void): void;
     model: {
         document: { selection: { getFirstPosition(): ModelPosition | null }; getRoot(): ModelElement };
         schema: { isObject(element: ModelElement): boolean };
@@ -65,6 +66,8 @@ let handle: HTMLButtonElement | null = null;
 let current: { editor: Editor; editable: HTMLElement; block: HTMLElement } | null = null;
 let drag: Drag | null = null;
 let frame = 0;
+/** Editors whose read-only changes this module follows (someone else took the turn, say). */
+const watched = new WeakSet<Editor>();
 
 export function installBlockHandle(isTouch: () => boolean) {
     document.addEventListener("touchend", (e) => {
@@ -140,6 +143,18 @@ function showFor(editable: HTMLElement) {
         return;
     }
     current = { editor, editable, block };
+    if (!watched.has(editor)) {
+        watched.add(editor);
+        editor.on("change:isReadOnly", () => {
+            if (current?.editor !== editor) {
+                return;
+            }
+            if (editor.isReadOnly && drag?.editor === editor) {
+                endDrag(false);
+            }
+            schedulePlace();
+        });
+    }
     ensureHandle();
     place();
 }
@@ -153,6 +168,7 @@ function ensureHandle() {
     button.className = "tf-block-handle";
     button.setAttribute("aria-label", t("tf.block_handle"));
     button.innerHTML = "<span class=\"bx bx-grid-vertical\" aria-hidden=\"true\"></span>";
+    setShown(button, false);
     button.addEventListener("touchstart", onHandleStart, { passive: false });
     button.addEventListener("touchmove", onHandleMove, { passive: false });
     button.addEventListener("touchend", onHandleEnd, { passive: false });
@@ -183,16 +199,21 @@ function place() {
     if (!current || !handle) {
         return;
     }
-    const { block, editable } = current;
+    const { block, editable, editor } = current;
     if (!block.isConnected || !editable.isConnected) {
         hide();
+        return;
+    }
+    if (editor.isReadOnly) {
+        // Back once the editor is writable again (`change:isReadOnly`).
+        setShown(handle, false);
         return;
     }
     const rect = block.getBoundingClientRect();
     const scroller = scrollParentOf(editable).getBoundingClientRect();
     const lineTop = rect.top + Math.min(rect.height, 28) / 2;
     const visible = lineTop > Math.max(scroller.top, 0) && lineTop < Math.min(scroller.bottom, window.innerHeight);
-    handle.classList.toggle("is-shown", visible);
+    setShown(handle, visible);
     const editableRect = editable.getBoundingClientRect();
     const x = Math.max(2, Math.min(rect.left, editableRect.left) - 30);
     handle.style.translate = `${Math.round(x)}px ${Math.round(lineTop - 22)}px`;
@@ -200,7 +221,24 @@ function place() {
 
 function hide() {
     current = null;
-    handle?.classList.remove("is-shown");
+    if (handle) {
+        setShown(handle, false);
+    }
+}
+
+/**
+ * Shows or hides the handle. Hidden it is also out of the tab order and of what assistive
+ * technology reads, so it never offers a move it cannot make.
+ */
+function setShown(button: HTMLButtonElement, shown: boolean) {
+    button.classList.toggle("is-shown", shown);
+    button.tabIndex = shown ? 0 : -1;
+    button.inert = !shown;
+    if (shown) {
+        button.removeAttribute("aria-hidden");
+    } else {
+        button.setAttribute("aria-hidden", "true");
+    }
 }
 
 function onHandleStart(e: TouchEvent) {
@@ -210,6 +248,10 @@ function onHandleStart(e: TouchEvent) {
     e.preventDefault();
     e.stopPropagation();
     const { editor, editable, block } = current;
+    if (editor.isReadOnly) {
+        hide();
+        return;
+    }
     const blocks = topLevelBlocks(editor);
     const originIndex = blocks.findIndex((b) => b.dom === block);
     if (originIndex < 0) {
@@ -308,12 +350,15 @@ function endDrag(commit: boolean) {
     schedulePlace();
 }
 
-/** Moves the top-level block at `from` to gap `gap` (0 = before the first block). */
+/**
+ * Moves the top-level block at `from` to gap `gap` (0 = before the first block). Nothing moves in
+ * a read-only editor (someone else has the turn, or the note is read-only).
+ */
 export function moveBlock(editor: Editor, from: number, gap: number) {
     const root = editor.model.document.getRoot();
     const blocks = [ ...root.getChildren() ];
     const source = blocks[from];
-    if (!source || gap === from || gap === from + 1) {
+    if (editor.isReadOnly || !source || gap === from || gap === from + 1) {
         return;
     }
     editor.model.change((writer) => {

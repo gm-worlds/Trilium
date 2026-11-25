@@ -157,9 +157,11 @@ async function waitForEngine() {
 async function engineCall(method, url, body) {
     const res = await fetch(`http://127.0.0.1:${ENGINE_PORT}${url}`, {
         method,
+        // As the gateway itself: its key and no person. The engine opens the setup routes to
+        // that caller only (a request that carries a person never reaches them).
         headers: {
             "content-type": "application/json",
-            ...identityHeaders(USERS.alice)
+            "x-tf-gateway-key": GATEWAY_KEY
         },
         body: body ? JSON.stringify(body) : undefined
     });
@@ -384,7 +386,7 @@ function hostPage() {
   <button data-act="log">log</button>
   <span id="who"></span>
 </div>
-<div id="wrap"><iframe id="frame" allow="clipboard-read; clipboard-write; fullscreen"></iframe><div id="kb">keyboard</div></div>
+<div id="wrap"><iframe id="frame" allow="clipboard-read; clipboard-write; fullscreen; microphone; camera"></iframe><div id="kb">keyboard</div></div>
 <ul id="log"></ul>
 <script>
 (() => {

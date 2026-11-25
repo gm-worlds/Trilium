@@ -8,12 +8,15 @@
  * `PRESS_PREVIEW_DELAY_MS` shows the button's name above the finger, sliding moves the highlight
  * and the name to the button under the finger, lifting activates that button, and sliding more
  * than `PRESS_CANCEL_PX` away from the row cancels. A finger that moves past `PRESS_SLOP_PX`
- * before the delay scrolls the row, or swipes the tabs on the launch bar, as usual.
+ * before the delay scrolls the row, or swipes the tabs on the launch bar, as usual. The picker's
+ * touch listeners exist only while a row button is pressed, and block scrolling only once the name
+ * shows (`touch_session.ts`).
  */
 import "./press.css";
 
 import { tfHaptic } from "../bridge.js";
 import { type Box, movedBeyond, PRESS_PREVIEW_DELAY_MS, PRESS_SLOP_PX, pickedIndex, type Point } from "./gestures.js";
+import { GestureListeners, lockScroll, preventIfCancelable, swallowNextClick } from "./touch_session.js";
 
 export const TAPPABLE = [
     "button", "a[href]", "summary", "[role='button']", "[role='menuitem']", "[role='tab']", "[role='option']",
@@ -42,7 +45,9 @@ export function installPressFeedback(isTouch: () => boolean) {
         if (e.pointerType !== "touch" || !isTouch() || !e.isPrimary || !(e.target instanceof Element)) {
             return;
         }
-        const target = e.target.closest(TAPPABLE);
+        const tapped = e.target.closest(TAPPABLE);
+        // The navigator row's open button covers the row, which carries the pressed look.
+        const target = tapped?.matches(".tf-row-open") ? tapped.closest(".mobile-navigator-row, .mobile-navigator-current-tile") : tapped;
         setPressed(target && !isDisabled(target) ? target : null);
     }, true);
     const release = (e: PointerEvent) => {
@@ -60,9 +65,6 @@ export function installPressFeedback(isTouch: () => boolean) {
 
     const picker = new RowPicker(setPressed);
     document.addEventListener("touchstart", (e) => picker.start(e, isTouch()), { capture: true, passive: true });
-    document.addEventListener("touchmove", (e) => picker.move(e), { capture: true, passive: false });
-    document.addEventListener("touchend", (e) => picker.end(e), { capture: true, passive: false });
-    document.addEventListener("touchcancel", () => picker.cancel(), true);
     // While picking, the launch bar's tab swipe and the edge swipe of the tree see no movement.
     document.addEventListener("pointermove", (e) => {
         if (picker.active && e.pointerType === "touch") {
@@ -92,6 +94,12 @@ class RowPicker {
     private last: Point = { x: 0, y: 0 };
     private timer: number | undefined;
     private label: HTMLElement | null = null;
+    private unlock: () => void = () => {};
+    private readonly listeners = new GestureListeners({
+        move: (e) => this.move(e),
+        end: (e) => this.end(e),
+        cancel: () => this.cancel()
+    });
 
     constructor(private readonly setPressed: (element: Element | null) => void) {}
 
@@ -109,6 +117,7 @@ class RowPicker {
         this.current = button;
         this.start0 = this.last = pointOf(e.touches[0]);
         this.timer = window.setTimeout(() => this.enter(), PRESS_PREVIEW_DELAY_MS);
+        this.listeners.set("watch");
     }
 
     move(e: TouchEvent) {
@@ -129,9 +138,7 @@ class RowPicker {
             return;
         }
         e.stopPropagation();
-        if (e.cancelable) {
-            e.preventDefault();
-        }
+        preventIfCancelable(e);
         const index = pickedIndex(this.last, boxOf(this.row), this.buttons.map(boxOf));
         this.highlight(index < 0 ? null : this.buttons[index]);
     }
@@ -146,20 +153,22 @@ class RowPicker {
             return;
         }
         // The browser's own click would land on the button the finger first touched.
-        if (e.cancelable) {
-            e.preventDefault();
-        }
+        preventIfCancelable(e);
         const chosen = this.current;
         this.cancel();
         this.setPressed(null);
         if (chosen instanceof HTMLElement && !isDisabled(chosen)) {
             chosen.click();
         }
+        swallowNextClick();
     }
 
     cancel() {
         window.clearTimeout(this.timer);
         this.timer = undefined;
+        this.listeners.set("none");
+        this.unlock();
+        this.unlock = () => {};
         if (this.active) {
             this.setPressed(null);
         }
@@ -177,6 +186,8 @@ class RowPicker {
             return;
         }
         this.active = true;
+        this.listeners.set("block");
+        this.unlock = lockScroll(rowScroller(this.current, row));
         this.buttons = [ ...row.querySelectorAll(ROW_BUTTONS) ].filter((button) =>
             button.closest(DENSE_ROWS) === row && !isDisabled(button) && isShown(button));
         const first = this.current;
@@ -243,6 +254,16 @@ export function labelOf(button: Element) {
     const labelledBy = button.getAttribute("aria-labelledby");
     const byId = labelledBy ? document.getElementById(labelledBy)?.textContent?.trim() : "";
     return byId || button.querySelector(".ck-button__label")?.textContent?.trim() || button.textContent?.trim() || "";
+}
+
+/** The element that scrolls a dense row sideways: the row itself or a wrapper around its buttons. */
+function rowScroller(button: Element, row: Element) {
+    for (let el = button.parentElement; el && el !== row.parentElement; el = el.parentElement) {
+        if (/(auto|scroll)/.test(getComputedStyle(el).overflowX) && el.scrollWidth > el.clientWidth + 1) {
+            return el;
+        }
+    }
+    return null;
 }
 
 function isDisabled(element: Element) {

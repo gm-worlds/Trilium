@@ -1,0 +1,68 @@
+.tf-work-launch-slot,
+.tf-work-badge-slot {
+    display: contents;
+}
+
+.tf-work-navigator-row {
+    display: flex;
+    gap: 8px;
+    padding: 6px 12px 2px;
+
+    .tf-work-navigator-button {
+        flex: 1;
+        min-width: 0;
+        min-height: 44px;
+        justify-content: center;
+    }
+}
+
+.tf-note-bell {
+    flex: none;
+
+    .tf-note-bell-button {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25em;
+        min-height: 32px;
+        padding: 0 0.5em;
+        border: 1px solid var(--main-border-color);
+        border-radius: 999px;
+        background: none;
+        color: var(--main-text-color);
+        font-size: 0.9rem;
+        cursor: pointer;
+        transition: border-color 120ms cubic-bezier(0.2, 0, 0, 1);
+
+        &:hover,
+        &:focus-visible {
+            border-color: var(--tf-accent, var(--main-border-color));
+        }
+
+        &:active {
+            transform: scale(0.96);
+        }
+    }
+
+    .tf-note-bell-count {
+        font-variant-numeric: tabular-nums;
+        font-weight: 600;
+    }
+}
+
+.tf-note-bell-menu {
+    min-width: min(26rem, calc(100vw - 32px));
+    max-width: calc(100vw - 32px);
+    padding: 4px 8px;
+}
+
+:root.tf-touch .tf-note-bell .tf-note-bell-button {
+    min-height: 44px;
+    min-width: 44px;
+    justify-content: center;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .tf-note-bell .tf-note-bell-button {
+        transition: none;
+    }
+}

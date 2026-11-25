@@ -1,0 +1,507 @@
+.tf-chip {
+    --tf-chip-height: 1.6em;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35em;
+    max-width: 100%;
+    min-height: var(--tf-chip-height);
+    padding: 0 0.55em;
+    margin: 0 0.1em;
+    border: 1px solid var(--main-border-color);
+    border-radius: calc(var(--tf-radius, 8px) * 0.75);
+    background: var(--main-background-color);
+    color: var(--main-text-color);
+    font-size: 0.92em;
+    line-height: 1.2;
+    vertical-align: baseline;
+    cursor: pointer;
+    user-select: none;
+    transition: border-color 150ms cubic-bezier(0.16, 1, 0.3, 1), background-color 150ms cubic-bezier(0.16, 1, 0.3, 1), transform 150ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 150ms cubic-bezier(0.16, 1, 0.3, 1);
+
+    &:hover {
+        border-color: var(--tf-accent, var(--main-border-color));
+        background: var(--hover-item-background-color);
+        transform: translateY(-1px);
+        box-shadow: 0 1px 3px rgb(0 0 0 / 0.12);
+    }
+
+    &:active {
+        transform: scale(0.98);
+    }
+
+    .tf-chip__body {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4em;
+        min-width: 0;
+    }
+
+    .tf-chip__icon {
+        flex: none;
+        color: var(--muted-text-color);
+        font-size: 1.05em;
+    }
+
+    .tf-chip__title {
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        max-width: 28em;
+    }
+
+    .tf-chip__status {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.3em;
+        flex: none;
+        color: var(--muted-text-color);
+        font-size: 0.9em;
+    }
+
+    .tf-chip__dot {
+        width: 0.55em;
+        height: 0.55em;
+        border-radius: 50%;
+        background: var(--tf-chip-status, currentColor);
+    }
+
+    .tf-chip__initials {
+        flex: none;
+        display: inline-grid;
+        place-items: center;
+        min-width: 1.6em;
+        height: 1.6em;
+        padding: 0 0.2em;
+        border: 1px solid var(--main-border-color);
+        border-radius: 50%;
+        color: var(--main-text-color);
+        font-size: 0.75em;
+        font-weight: 600;
+    }
+
+    &.tf-chip--done .tf-chip__title {
+        text-decoration: line-through;
+        color: var(--muted-text-color);
+    }
+
+    &.tf-chip--loading .tf-chip__title {
+        color: var(--muted-text-color);
+    }
+
+    &.tf-chip--no-access,
+    &.tf-chip--removed {
+        border-style: dashed;
+        color: var(--muted-text-color);
+    }
+
+    &.tf-chip--removed .tf-chip__title {
+        text-decoration: line-through;
+    }
+}
+
+.ck-content a.tf-chip {
+    text-decoration: none;
+}
+
+.ck-widget.tf-chip.ck-widget_selected,
+.ck-widget.tf-chip:focus {
+    outline: 2px solid var(--tf-accent, var(--ck-color-focus-border));
+    outline-offset: 1px;
+}
+
+:root.tf-touch .tf-chip {
+    --tf-chip-height: 1.9em;
+}
+
+.tf-todo-layer-host {
+    position: relative;
+}
+
+.tf-todo-layer {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 2;
+
+    > * {
+        position: absolute;
+        left: var(--tf-x);
+        top: var(--tf-y);
+        transform: translateY(-50%);
+        pointer-events: auto;
+    }
+
+    .tf-todo-clock {
+        color: var(--tf-accent-solid, var(--muted-text-color));
+        font-size: 1.05em;
+        pointer-events: none;
+    }
+
+    .tf-todo-action {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.3em;
+        height: 26px;
+        padding: 0 0.6em;
+        border: 1px solid var(--main-border-color);
+        border-radius: var(--tf-radius, 8px);
+        background: var(--main-background-color);
+        color: var(--muted-text-color);
+        font-size: 0.8rem;
+        cursor: pointer;
+        transition: color 120ms cubic-bezier(0.2, 0, 0, 1), border-color 120ms cubic-bezier(0.2, 0, 0, 1);
+
+        &:hover,
+        &:focus-visible {
+            color: var(--main-text-color);
+            border-color: var(--tf-accent, var(--main-border-color));
+        }
+
+        &:active {
+            transform: translateY(-50%) scale(0.96);
+        }
+    }
+
+    &.tf-todo-layer--touch .tf-todo-action {
+        height: 44px;
+        min-width: 44px;
+        padding: 0 0.8em;
+    }
+}
+
+.ck-content ul.todo-list > li.tf-todo-highlight {
+    background: color-mix(in srgb, var(--tf-accent, #4fb3ff) 18%, transparent);
+    border-radius: 4px;
+    transition: background-color 600ms cubic-bezier(0.2, 0, 0, 1);
+}
+
+.modal.tf-work-dialog {
+    .tf-work-error {
+        margin: 0.75rem 0 0;
+        color: var(--bs-danger, #c0392b);
+    }
+
+    .tf-work-hint {
+        color: var(--muted-text-color);
+        margin: 0.25rem 0 0;
+    }
+
+    .tf-work-loading {
+        min-height: 6rem;
+    }
+
+    .tf-work-heading {
+        margin: 1rem 0 0.4rem;
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: var(--muted-text-color);
+    }
+
+    .tf-work-count {
+        margin-inline-start: 0.6em;
+        font-size: 0.85em;
+        font-weight: 400;
+        color: var(--muted-text-color);
+    }
+}
+
+.modal.tf-reminder-dialog {
+    .tf-reminder-quick {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+        margin: 0.25rem 0 1rem;
+
+        .btn {
+            justify-content: center;
+            width: 100%;
+            min-height: 40px;
+        }
+    }
+
+    .tf-reminder-when {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-start;
+        gap: 16px;
+
+        > * {
+            flex: 1 1 10rem;
+        }
+    }
+
+    .tf-reminder-calendar {
+        flex: 0 0 auto;
+    }
+}
+
+.modal.tf-make-task-dialog .tf-make-task-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+
+    > * {
+        flex: 1 1 12rem;
+    }
+}
+
+.tf-reminder-rows {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+
+    .tf-reminder-row {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        min-height: 44px;
+        border-bottom: 1px solid var(--main-border-color);
+
+        &:last-child {
+            border-bottom: 0;
+        }
+    }
+
+    .tf-reminder-main {
+        flex: 1;
+        min-width: 0;
+        display: grid;
+        grid-template-columns: auto 1fr;
+        column-gap: 0.75rem;
+        align-items: baseline;
+        padding: 6px 4px;
+        border: 0;
+        background: none;
+        color: inherit;
+        text-align: start;
+        cursor: pointer;
+        border-radius: 6px;
+
+        &:hover {
+            background: var(--hover-item-background-color);
+            box-shadow: inset 2px 0 0 var(--tf-accent, var(--main-border-color));
+        }
+    }
+
+    .tf-reminder-when {
+        color: var(--muted-text-color);
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+        font-size: 0.9em;
+    }
+
+    .tf-reminder-row--overdue .tf-reminder-when {
+        color: var(--bs-danger, #c0392b);
+    }
+
+    .tf-reminder-text {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .tf-reminder-meta {
+        grid-column: 2;
+        display: flex;
+        gap: 0.5em;
+        color: var(--muted-text-color);
+        font-size: 0.82em;
+
+        &:empty {
+            display: none;
+        }
+    }
+
+    .tf-reminder-note {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.3em;
+        min-width: 0;
+    }
+
+    .tf-reminder-actions {
+        display: flex;
+        flex: none;
+    }
+}
+
+@media (max-width: 600px) {
+    .tf-reminder-rows .tf-reminder-main {
+        grid-template-columns: minmax(0, 1fr);
+
+        .tf-reminder-meta {
+            grid-column: 1;
+        }
+    }
+
+    .tf-reminder-rows .tf-reminder-note {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+}
+
+.modal.tf-todos-dialog {
+    .tf-todos-scope {
+        display: inline-flex;
+        margin-bottom: 12px;
+        border: 1px solid var(--main-border-color);
+        border-radius: var(--tf-radius, 8px);
+        padding: 2px;
+        gap: 2px;
+    }
+
+    .tf-segment {
+        min-height: 36px;
+        padding: 0 0.9em;
+        border: 0;
+        border-radius: calc(var(--tf-radius, 8px) - 2px);
+        background: none;
+        color: var(--muted-text-color);
+        cursor: pointer;
+        transition: background-color 120ms cubic-bezier(0.2, 0, 0, 1), color 120ms cubic-bezier(0.2, 0, 0, 1);
+
+        &:hover:not(:disabled) {
+            color: var(--main-text-color);
+        }
+
+        &.tf-segment--on {
+            background: var(--active-item-background-color, var(--hover-item-background-color));
+            color: var(--main-text-color);
+            font-weight: 600;
+        }
+
+        &:disabled {
+            opacity: 0.5;
+            cursor: default;
+        }
+    }
+
+    .tf-todo-group + .tf-todo-group {
+        margin-top: 1rem;
+    }
+
+    .tf-todo-note {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        width: 100%;
+        min-height: 44px;
+        justify-content: center;
+        padding: 4px 6px;
+        border: 0;
+        border-radius: 6px;
+        background: none;
+        color: inherit;
+        text-align: start;
+        cursor: pointer;
+
+        &:hover {
+            background: var(--hover-item-background-color);
+            box-shadow: inset 2px 0 0 var(--tf-accent, var(--main-border-color));
+        }
+    }
+
+    .tf-todo-note-title {
+        font-weight: 600;
+    }
+
+    .tf-todo-note-path {
+        color: var(--muted-text-color);
+        font-size: 0.82em;
+    }
+
+    .tf-todo-rows {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+    }
+
+    .tf-todo-row {
+        display: flex;
+        align-items: center;
+        min-height: 44px;
+        border-bottom: 1px solid var(--main-border-color);
+
+        &:last-child {
+            border-bottom: 0;
+        }
+    }
+
+    .tf-todo-check {
+        flex: none;
+        display: grid;
+        place-items: center;
+        width: 44px;
+        height: 44px;
+        margin: 0;
+        cursor: pointer;
+
+        input {
+            width: 18px;
+            height: 18px;
+            margin: 0;
+            cursor: pointer;
+        }
+    }
+
+    .tf-todo-text {
+        flex: 1;
+        min-width: 0;
+        min-height: 44px;
+        padding: 4px 6px;
+        border: 0;
+        background: none;
+        color: inherit;
+        text-align: start;
+        cursor: pointer;
+        border-radius: 6px;
+
+        &:hover {
+            background: var(--hover-item-background-color);
+            box-shadow: inset 2px 0 0 var(--tf-accent, var(--main-border-color));
+        }
+    }
+
+    .tf-todo-row--done .tf-todo-text {
+        text-decoration: line-through;
+        color: var(--muted-text-color);
+    }
+
+    .tf-todo-state {
+        flex: none;
+        min-height: 32px;
+        margin-inline-end: 6px;
+        padding: 0 0.6em;
+        border: 1px solid var(--main-border-color);
+        border-radius: 999px;
+        background: none;
+        color: var(--muted-text-color);
+        font-size: 0.82em;
+        cursor: pointer;
+    }
+
+    .tf-todo-more {
+        margin-top: 1rem;
+    }
+}
+
+:root.tf-touch {
+    .modal.tf-todos-dialog .tf-segment,
+    .modal.tf-todos-dialog .tf-todo-state,
+    .modal.tf-reminder-dialog .tf-reminder-quick .btn,
+    .modal.tf-work-dialog .form-select,
+    .modal.tf-work-dialog .form-control {
+        min-height: 44px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .tf-chip,
+    .tf-todo-layer .tf-todo-action,
+    .modal.tf-todos-dialog .tf-segment,
+    .ck-content ul.todo-list > li.tf-todo-highlight {
+        transition: none;
+    }
+}

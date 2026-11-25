@@ -127,6 +127,8 @@ export interface SlashCommandConfig {
      * and commits the entry picked as a {@link SlashCommandItem}. Without it there is no palette.
      */
     list?: ( editor: Editor ) => MentionHostedList;
+    /** Entries the embedding adds, such as NoteForce's voice note. */
+    tfExtraCommands?: ( editor: Editor ) => SlashCommandDefinition[]; // tf:
 }
 
 /** What a palette's list commits for the entry picked. */
@@ -237,7 +239,8 @@ export default class TriliumSlashCommands extends Plugin {
         return [
             ...buildDefaultSlashCommands(editor),
             ...buildTriliumSlashCommands(editor),
-            ...buildSnippetSlashCommands(editor)
+            ...buildSnippetSlashCommands(editor),
+            ...(config.tfExtraCommands?.(editor) ?? []) // tf: the embedding's own entries
         ]
             .filter((definition) => !removed.has(definition.id))
             .filter((definition) => applies(editor, definition));

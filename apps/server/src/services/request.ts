@@ -5,6 +5,8 @@ import { readCappedResponse } from "@triliumnext/core/src/services/request.js";
 import url from "url";
 
 import { createPinnedLookup, safeFetch, validateHostResolution, validateUrl } from "./safe_fetch.js";
+import { isTfEmbedded } from "@triliumnext/core/src/tf/identity.js"; // tf: one guard for content fetches
+import { tfOutboundGetImage } from "../tf/outbound.js"; // tf:
 
 // this service provides abstraction over node's HTTP/HTTPS modules.
 // Subclasses (e.g. apps/desktop's ElectronRequestProvider) can override
@@ -251,6 +253,7 @@ export default class NodeRequestProvider implements RequestProvider {
      * the check above that stands alone.
      */
     async getImage(imageUrl: string): Promise<ArrayBuffer> {
+        if (isTfEmbedded()) return await tfOutboundGetImage(imageUrl); // tf: strict guard when embedded
         const parsedTargetUrl = validateUrl(imageUrl);
         const validatedAddresses = await validateHostResolution(parsedTargetUrl.hostname);
 

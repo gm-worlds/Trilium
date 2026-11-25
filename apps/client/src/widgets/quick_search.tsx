@@ -25,6 +25,7 @@ import Popup from "./react/Popup";
 import RawHtml, { RawHtmlBlock } from "./react/RawHtml";
 import SearchStringEditor from "./search/SearchStringEditor";
 import { ShortcutHintOverlayButton } from "./shortcut_hints/shortcut_hint_button";
+import { TfOtherNotebooks } from "../tf/reach/components.js"; // tf:
 
 /** The keys the results answer, beside the field's own, for the shortcut-hints pane. */
 const QUICK_SEARCH_HINTS: ShortcutHintDefinition = [
@@ -185,6 +186,7 @@ export default function QuickSearch() {
                 >
                     <div className="quick-search-results">
                         <QuickSearchResults searchState={searchState} onOpenResult={close} />
+                        <TfOtherNotebooks query={searchState ? searchStringRef.current.trim() : ""} variant="menu" onOpen={close} /> {/* tf: */}
                     </div>
                     <div className="quick-search-footer">
                         {!isMobile() && (

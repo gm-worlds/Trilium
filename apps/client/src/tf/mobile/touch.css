@@ -45,7 +45,6 @@
         .search-button,
         .icon-action,
         .collection-filter-submit,
-        .btn-close,
         .custom-title-bar-button,
         .collapsible-title,
         .tab-card .tn-link
@@ -63,8 +62,9 @@
         }
     }
 
-    /* `.dropdown-toggle` draws its caret with `::after`, so its hit area uses `::before`. */
-    .btn.select-button {
+    /* `.dropdown-toggle` draws its caret and `.btn-close` its glyph with `::after`, so their hit
+       areas use `::before`. */
+    :is(.btn.select-button, .btn-close:not(.tf-no-hit)) {
         position: relative;
 
         &::before {
@@ -277,6 +277,12 @@
     :is(.mobile-navigator-row, .fancytree-node, .tf-block-handle) {
         -webkit-touch-callout: none;
         user-select: none;
+    }
+
+    /* `lockScroll()` in `touch_session.ts`: WebKit cannot cancel the moves of a touch that started passive. */
+    .tf-gesture-lock {
+        overflow: hidden !important;
+        touch-action: none;
     }
 }
 

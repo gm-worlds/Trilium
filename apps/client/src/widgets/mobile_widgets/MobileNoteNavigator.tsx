@@ -19,7 +19,9 @@ import { onSystemBack, type SystemBackHandler } from "../../services/system_back
 import tree from "../../services/tree";
 import utils, { isIOS } from "../../services/utils";
 import { NoteContent } from "../collections/legacy/ListOrGridView";
-import { TfNavigatorRowTools } from "../../tf/mobile/navigator_row_tools"; // tf:
+import { TfNavigatorRowTools, TfNavigatorTileTools } from "../../tf/mobile/navigator_row_tools"; // tf:
+import { TfTeamSlot } from "../../tf/team/hooks"; // tf:
+import { TfWorkNavigatorRow } from "../../tf/work/WorkComponents.js"; // tf:
 import { useShareState } from "../layout/NoteBadges";
 import {
     useActiveNoteContext,
@@ -270,6 +272,8 @@ export default function MobileNoteNavigator() {
 
     return (
         <div className="mobile-note-navigator">
+            <TfTeamSlot name="navigator-header" /> {/* tf: people here, what changed */}
+            <TfWorkNavigatorRow /> {/* tf: To-dos, Reminders */}
             {showToolbar && (
                 <div className="mobile-navigator-toolbar">
                     {canGoBack ? (
@@ -339,6 +343,7 @@ export default function MobileNoteNavigator() {
                                     className={clsx("mobile-navigator-current-icon", parentNote.isProtected && "is-protected")}
                                 />
                                 <TitleWithIndicators note={parentNote} parentNoteId={grandparentId} title={parentTitle ?? parentNote.title} className="mobile-navigator-current-title" />
+                                <TfNavigatorTileTools title={parentTitle ?? parentNote.title} /> {/* tf: open button, add and More named after the note */}
                                 <button
                                     type="button"
                                     className="mobile-navigator-current-action"
@@ -702,7 +707,8 @@ function NavigatorRow({ note, parentNoteId, childNotePath, isActive, isPending, 
                 className={clsx("mobile-navigator-row-icon", note.isProtected && "is-protected")}
             />
             <TitleWithIndicators note={note} parentNoteId={parentNoteId} title={title} className="mobile-navigator-row-title" />
-            <TfNavigatorRowTools noteId={note.noteId} parentNoteId={parentNoteId} notePath={childNotePath} /> {/* tf: touch drag + more button */}
+            <TfTeamSlot name="navigator-row" inline noteId={note.noteId} /> {/* tf: presence and unread dots */}
+            <TfNavigatorRowTools noteId={note.noteId} parentNoteId={parentNoteId} notePath={childNotePath} title={title} /> {/* tf: open button, touch drag, More */}
             {showHiddenBadge && (
                 <span
                     className="mobile-navigator-row-hidden-badge"

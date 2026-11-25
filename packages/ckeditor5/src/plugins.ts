@@ -99,6 +99,7 @@ import ImagePosition from "./plugins/image_position.js";
 import ColorMenu from "./plugins/color_menu.js";
 import BlockDragHandle from "./plugins/block_drag_handle.js";
 import SkipUnchangedAttributes from "./plugins/skip_unchanged_attributes.js";
+import TfWork from "./tf/work/tf_work.js"; // tf:
 
 /**
  * Plugins that are specific to Trilium and not part of the CKEditor 5 core, included in both text editors but not in the attribute editor.
@@ -329,7 +330,8 @@ export const COMMON_PLUGINS: typeof Plugin[] = [
     TriliumFormatPainter,
 
     ...TRILIUM_PLUGINS,
-    ...EXTERNAL_PLUGINS
+    ...EXTERNAL_PLUGINS,
+    TfWork // tf: Taskforce chips, tasks from notes, reminders; inert without the `tfWork` config
 ];
 
 /**

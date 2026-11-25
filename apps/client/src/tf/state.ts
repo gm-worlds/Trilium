@@ -55,11 +55,12 @@ export function notifyTf() {
 
 /**
  * Option pages that have no meaning inside Taskforce: the gateway handles sign-in, sync, backups,
- * API access and scripting, so their settings would only fail or mislead.
+ * API access and scripting, so their settings would only fail or mislead. The Password page
+ * stays: it is where a notebook's password for protected notes is set and changed (its sign-in
+ * method and its reset are hidden, see `HIDDEN_UI`).
  */
 const HIDDEN_OPTION_PAGES = new Set([
     "_optionsSync",
-    "_optionsPassword",
     "_optionsEtapi",
     "_optionsBackup",
     "_optionsDatabase",
@@ -84,6 +85,25 @@ export function isTfHiddenCommand(command: unknown) {
     return isTfEmbedded() && typeof command === "string" && HIDDEN_COMMANDS.has(command);
 }
 
+/**
+ * Upstream controls hidden inside Taskforce: the gateway closes the engine's `/share` pages, so
+ * the "Shared" switch, the share badge and the share options would only make dead links. Share
+ * links that end (`tf/reach/share`) take their place.
+ */
+const HIDDEN_UI = new Set<string>([
+    "shareSwitch",
+    "shareBadge",
+    "shareOptions",
+    // Taskforce is the sign-in, so the sign-in method (password, two-factor, OAuth) is not a choice here.
+    "signInMethod",
+    // A reset throws away the key of every protected note in the notebook, for everyone; the engine refuses it.
+    "passwordReset"
+]);
+
+export function isTfHiddenUi(name: string) {
+    return isTfEmbedded() && HIDDEN_UI.has(name);
+}
+
 const baseBlobs = new Map<string, string>();
 
 /**
@@ -101,18 +121,28 @@ export function getTfBaseBlob(noteId: string) {
 }
 
 /**
- * Starts the embedding when the page runs in a frame. Outside a frame nothing is loaded, so a plain
- * Trilium start-up makes no extra request.
+ * Whether this page may become embedded: the server runs with `TF_EMBED` (`tfEmbed` in the page
+ * bootstrap) and the page has a parent window. Anything else is a plain Trilium page.
+ */
+export function isTfEmbedCandidate() {
+    return typeof window !== "undefined"
+        && window.parent !== window
+        && !!(window.glob as { tfEmbed?: boolean } | undefined)?.tfEmbed;
+}
+
+/**
+ * Starts the embedding on an embed candidate page. Anywhere else nothing is loaded, so a plain
+ * Trilium start-up, also inside someone else's frame, makes no extra request.
  */
 export function maybeStartTf() {
-    if (window.parent === window) {
+    if (!isTfEmbedCandidate()) {
         return;
     }
     void import("./index.js").then((tf) => tf.startTf());
 }
 
 // Before `appContext.start()` restores the tabs, so the first navigations add no host history either.
-if (typeof window !== "undefined" && window.parent !== window) {
+if (isTfEmbedCandidate()) {
     installTfHistory();
 }
 

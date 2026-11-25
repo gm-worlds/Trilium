@@ -16,6 +16,7 @@ import NoteTitleWidget from "../note_title";
 import { useNoteContext, useNoteProperty, useStaticTooltip } from "../react/hooks";
 import { joinElements } from "../react/react_utils";
 import { useNoteMetadata } from "./note_metadata";
+import { TfTeamSlot } from "../../tf/team/hooks"; // tf:
 
 export default function InlineTitle() {
     const { note, parentComponent, viewScope } = useNoteContext();
@@ -129,6 +130,7 @@ export function NoteTitleDetails() {
     return items.length > 0 && (
         <div className="title-details">
             {joinElements(items, " • ")}
+            <TfTeamSlot name="title-details" /> {/* tf: edited by */}
         </div>
     );
 }

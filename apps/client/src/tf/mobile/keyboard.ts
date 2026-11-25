@@ -3,7 +3,7 @@
  * a resize of the frame (the host shrinks it for the on-screen keyboard, a rotation, split view) and
  * while typing, the caret or the focused field is scrolled above the keyboard and the floating
  * formatting toolbar. Also keeps each scroller's position through a rotation, where the content
- * reflows to another width.
+ * reflows to another width. Runs only while the touch layer is on (`tf-touch`).
  */
 import { scrollParentOf } from "./drag_visuals.js";
 import { TF_VIEWPORT_EVENT } from "../theme.js";
@@ -11,11 +11,15 @@ import { TF_VIEWPORT_EVENT } from "../theme.js";
 /** Room kept between the caret and the toolbar or keyboard above which it must stay. */
 const CARET_MARGIN_PX = 16;
 const SCROLLERS = ".scrolling-container, .mobile-navigator-scroll, .note-detail-printable, .options-section-container";
+/** What floats over the bottom of the note and must stay clear of the caret. */
+const FLOATING_BARS = ".mobile-editor-toolbar, .classic-toolbar-island, .tf-voice-bar";
 
 let keyboardInset = 0;
 let frame = 0;
+let touchOn: () => boolean = () => false;
 
-export function installKeyboardFollow() {
+export function installKeyboardFollow(isTouch: () => boolean) {
+    touchOn = isTouch;
     window.addEventListener(TF_VIEWPORT_EVENT, (e) => {
         keyboardInset = Math.max(0, Number((e as CustomEvent<{ keyboardInset?: number }>).detail?.keyboardInset) || 0);
         scheduleReveal();
@@ -23,13 +27,13 @@ export function installKeyboardFollow() {
     window.addEventListener("resize", scheduleReveal);
     window.visualViewport?.addEventListener("resize", scheduleReveal);
     document.addEventListener("focusin", (e) => {
-        if (isTextField(e.target)) {
+        if (touchOn() && isTextField(e.target)) {
             // The keyboard opens after the focus; reveal once it has.
             setTimeout(scheduleReveal, 350);
         }
     });
     document.addEventListener("input", (e) => {
-        if (isTextField(e.target)) {
+        if (touchOn() && isTextField(e.target)) {
             scheduleReveal();
         }
     }, true);
@@ -42,6 +46,9 @@ function isTextField(target: EventTarget | null) {
 }
 
 function scheduleReveal() {
+    if (!touchOn()) {
+        return;
+    }
     cancelAnimationFrame(frame);
     frame = requestAnimationFrame(() => requestAnimationFrame(revealFocus));
 }
@@ -49,7 +56,7 @@ function scheduleReveal() {
 /** The lowest visible y the caret may reach: above the keyboard and above a floating toolbar. */
 export function visibleBottom() {
     let bottom = (window.visualViewport?.height ?? window.innerHeight) - keyboardInset;
-    for (const toolbar of document.querySelectorAll<HTMLElement>(".mobile-editor-toolbar, .classic-toolbar-island")) {
+    for (const toolbar of document.querySelectorAll<HTMLElement>(FLOATING_BARS)) {
         const rect = toolbar.getBoundingClientRect();
         if (rect.height > 0 && rect.top < bottom && rect.bottom > bottom - 160) {
             bottom = Math.min(bottom, rect.top);
@@ -126,14 +133,15 @@ function installScrollKeeper() {
 
     document.addEventListener("scroll", (e) => {
         const target = e.target;
-        if (target instanceof HTMLElement && target.matches(SCROLLERS)) {
+        if (touchOn() && target instanceof HTMLElement && target.matches(SCROLLERS)) {
             pending.add(target);
             frame ||= requestAnimationFrame(record);
         }
     }, { capture: true, passive: true });
 
     window.addEventListener("resize", () => {
-        if (window.innerWidth === width) {
+        if (window.innerWidth === width || !touchOn()) {
+            width = window.innerWidth;
             return;
         }
         width = window.innerWidth;

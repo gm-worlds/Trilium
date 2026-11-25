@@ -15,6 +15,7 @@
  * `safe_fetch`, which is where the address is actually vetted.
  */
 
+import { assertTfAiAllowed } from "../../../tf/policy.js"; // tf: no AI request when embedded
 import { getRequestProvider } from "../../request.js";
 
 /**
@@ -24,8 +25,10 @@ import { getRequestProvider } from "../../request.js";
  * is the page's own `fetch`, which is all that runtime has and all it needs. Each implementation
  * says why on itself.
  */
-export const llmFetch: typeof globalThis.fetch = async (input, init) =>
-    await getRequestProvider().fetchApi(urlOf(input), init ?? {}, { allowPrivateNetwork: true });
+export const llmFetch: typeof globalThis.fetch = async (input, init) => {
+    assertTfAiAllowed(); // tf: no AI request when embedded
+    return await getRequestProvider().fetchApi(urlOf(input), init ?? {}, { allowPrivateNetwork: true });
+};
 
 /**
  * The address out of whatever `fetch` was handed.

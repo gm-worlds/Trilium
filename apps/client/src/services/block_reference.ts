@@ -29,6 +29,7 @@ import { byBlockType } from "./in_app_help.js";
 import { calculateHash, parseNavigationStateFromUrl, type ViewScope } from "./link.js";
 import { getNoteShareLink } from "./share_link.js";
 import toast from "./toast.js";
+import { getTfTeamHook } from "../tf/team/hooks.js"; // tf:
 
 const HIGHLIGHT_CLASS = "block-reference-highlight";
 
@@ -180,6 +181,8 @@ export function openBlockHandleMenu(
             handler: copyShareLink
         });
     }
+    const tfTeamItems = editor ? getTfTeamHook("blockMenuItems")?.(editor, blocks) ?? [] : []; // tf: comment on the block
+    if (tfTeamItems.length) items.push({ kind: "separator" }, ...tfTeamItems); // tf:
     if (aiItem) {
         items.push({ kind: "separator" }, aiItem);
     }

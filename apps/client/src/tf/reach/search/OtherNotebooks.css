@@ -1,0 +1,102 @@
+.tf-other-notebooks {
+    display: flex;
+    flex-direction: column;
+
+    .tf-other-notebooks-heading {
+        margin: 0;
+        font-size: 0.8125rem;
+        font-weight: 600;
+        color: var(--muted-text-color);
+    }
+
+    .tf-other-hit {
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 2px;
+        width: 100%;
+        text-align: start;
+        white-space: normal;
+        color: var(--main-text-color);
+        font: inherit;
+    }
+
+    .tf-other-hit-title {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-weight: 500;
+        overflow-wrap: anywhere;
+    }
+
+    .tf-other-hit-where {
+        font-size: 0.8125rem;
+        color: var(--muted-text-color);
+        overflow-wrap: anywhere;
+    }
+
+    .tf-other-hit-excerpt {
+        font-size: 0.875rem;
+        line-height: 1.4;
+        color: var(--main-text-color);
+        overflow-wrap: anywhere;
+
+        mark {
+            padding: 0 1px;
+            border-radius: 2px;
+            background: color-mix(in srgb, var(--tf-accent, var(--link-color)) 28%, transparent);
+            color: inherit;
+        }
+    }
+
+    &.variant-menu {
+        border-top: 1px solid var(--dropdown-border-color, var(--main-border-color));
+        padding-top: 4px;
+        margin-top: 4px;
+
+        .tf-other-notebooks-heading {
+            padding: 6px 16px 4px;
+        }
+
+        .tf-other-hit {
+            padding: 8px 16px;
+            background: none;
+            border: 0;
+        }
+    }
+
+    &.variant-list {
+        gap: 8px;
+        margin: 24px 0 8px;
+
+        .tf-other-hit {
+            padding: 12px 14px;
+            border: 1px solid var(--main-border-color);
+            border-radius: var(--bs-border-radius, 8px);
+            background: var(--card-background-color, transparent);
+            cursor: pointer;
+            transition: background-color var(--tf-motion-fast, 150ms) var(--tf-ease-out, ease-out);
+
+            &:hover,
+            &:focus-visible {
+                background: var(--card-background-hover-color, var(--hover-item-background-color));
+            }
+        }
+    }
+}
+
+:root.tf-touch .tf-other-notebooks .tf-other-hit {
+    min-height: 44px;
+}
+
+.search-result-widget:has(> .tf-other-notebooks) {
+    > .no-items {
+        height: auto;
+        flex-grow: 0;
+        padding-block: 2em 0.75em;
+    }
+
+    > .tf-other-notebooks {
+        margin-inline: var(--content-margin-inline);
+    }
+}

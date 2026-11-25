@@ -33,6 +33,8 @@ import ws from "../services/ws.js";
 import NoteContextAwareWidget from "./note_context_aware_widget.js";
 import TreeSettings from "./note_tree_settings.jsx";
 import { disposeReactWidget, renderReactWidgetAtElement } from "./react/react_utils.jsx";
+import { getTfTeamHook } from "../tf/team/hooks.js"; // tf:
+import { tfSharedTreeTooltip } from "../tf/reach/hooks.js"; // tf:
 
 const TPL = /*html*/`
 <div class="tree-wrapper">
@@ -1899,7 +1901,7 @@ function buildEnhanceTitle() {
             // Pass no sync host to preserve this tooltip's prior local-origin behavior; the helper
             // still substitutes the loopback origin for the trilium-app:// desktop renderer (#10589).
             const shareUrl = buildShareLink(shareId, undefined);
-            const tooltipText = t("note_tree.shared-indicator-tooltip-with-url", { url: shareUrl });
+            const tooltipText = tfSharedTreeTooltip() ?? t("note_tree.shared-indicator-tooltip-with-url", { url: shareUrl }); // tf: no dead /share address
 
             const $sharedIndicator = $(`<span class="note-indicator-icon shared-indicator"></span>`);
             $sharedIndicator.attr("title", tooltipText);
@@ -1913,6 +1915,8 @@ function buildEnhanceTitle() {
             $badge.attr("title", t("note_tree.subtree-hidden-tooltip", { count }));
             $span.append($badge);
         }
+
+        getTfTeamHook("treeRow")?.(node.span, note.noteId); // tf: presence and unread marks
     };
 }
 

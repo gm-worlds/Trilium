@@ -1,7 +1,7 @@
 import { t } from "../../services/i18n";
 import TabStrip, { type TabStripTabDefinition } from "../react/TabStrip";
 
-export type RightPaneTabId = "outline" | "attributes" | "connections" | "chat" | "widgets";
+export type RightPaneTabId = "outline" | "attributes" | "connections" | "chat" | "widgets" | "tf-comments"; // tf: comments
 
 export interface RightPaneTabDefinition extends TabStripTabDefinition<RightPaneTabId> {
     /**
@@ -27,6 +27,7 @@ export const RIGHT_PANE_TABS: RightPaneTabDefinition[] = [
     // alwaysShown to appear in the strip at all; any note can be linked to, so staying put fits it anyway.
     { id: "connections", title: t("right_pane.tab_connections"), icon: "bx bx-network-chart", alwaysShown: true },
     { id: "chat", title: t("right_pane.tab_chat"), icon: "bx bx-bot" },
+    { id: "tf-comments", get title() { return t("tf.team.comments"); }, icon: "bx bx-message-square-dots" }, // tf: comments
     // Widgets contributed by the user's own scripts, which belong to none of the groups above.
     { id: "widgets", title: t("right_pane.tab_widgets"), icon: "bx bx-extension" }
 ];

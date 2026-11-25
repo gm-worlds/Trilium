@@ -18,6 +18,7 @@ import IconPicker from "../../react/IconPicker";
 import type { AiNoteLocation } from "./ai_assistant_stream";
 import { useAiMenuFooter, useAiQuickActions } from "./ai_quick_actions";
 import { buildConfig, BuildEditorOptions, type ContentEmbedHandlers } from "./config";
+import { applyTfEditorConfig, whenTfEditorReady } from "../../../tf/work/editor_host.js"; // tf:
 
 export interface CKEditorApi {
     /** returns true if user selected some text, false if there's no selection */
@@ -542,6 +543,8 @@ const ICON_PICKER_COLUMNS = 9;
 
 async function buildEditor(element: HTMLElement, isClassicEditor: boolean, opts: BuildEditorOptions) {
     const editorClass = isClassicEditor ? ClassicEditor : PopupEditor;
+    await whenTfEditorReady(); // tf: the work host needs to know whether the notebook is embedded
     const config = await buildConfig(opts);
+    applyTfEditorConfig(config); // tf: chips, tasks and reminders (`tfWork`)
     return await editorClass.create(element, config);
 }

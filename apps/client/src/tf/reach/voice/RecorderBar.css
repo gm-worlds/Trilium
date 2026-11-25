@@ -1,0 +1,182 @@
+.tf-voice-bar {
+    --tf-voice-safe-left: var(--safe-area-inset-left, env(safe-area-inset-left, 0px));
+    --tf-voice-safe-right: var(--safe-area-inset-right, env(safe-area-inset-right, 0px));
+    --tf-voice-safe-bottom: var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px));
+    position: fixed;
+    z-index: 1100;
+    inset-inline-start: max(var(--tf-voice-left, 12px), calc(var(--tf-voice-safe-left) + 12px));
+    bottom: max(
+        var(--tf-voice-bottom, 12px),
+        calc(var(--tf-keyboard-inset, 0px) + 12px),
+        calc(var(--tf-voice-safe-bottom) + 12px)
+    );
+    width: min(
+        var(--tf-voice-width, calc(100vw - 24px)),
+        calc(100vw - var(--tf-voice-safe-left) - var(--tf-voice-safe-right) - 24px)
+    );
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 8px 8px 8px 14px;
+    border: 1px solid var(--main-border-color);
+    border-radius: calc(var(--tf-radius, 8px) + 4px);
+    background: var(--menu-background-color-no-backdrop, var(--main-background-color));
+    color: var(--main-text-color);
+    box-shadow: 0 8px 28px rgb(0 0 0 / 14%);
+    font-family: var(--main-font-family);
+    animation: tf-voice-bar-in 180ms cubic-bezier(0.2, 0.9, 0.3, 1);
+
+    .tf-voice-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        min-height: 36px;
+
+        &.wrap {
+            flex-wrap: wrap;
+        }
+    }
+
+    .tf-voice-dot {
+        flex: none;
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: var(--muted-text-color);
+
+        &.on {
+            background: var(--dropdown-item-icon-destructive-color, currentColor);
+        }
+    }
+
+    .tf-voice-status {
+        flex: none;
+        display: flex;
+        align-items: baseline;
+        gap: 8px;
+        min-width: 0;
+    }
+
+    .tf-voice-label {
+        font-size: 0.9em;
+        color: var(--muted-text-color);
+    }
+
+    .tf-voice-time {
+        font-variant-numeric: tabular-nums;
+        font-weight: 600;
+        letter-spacing: 0.01em;
+    }
+
+    .tf-voice-level {
+        flex: 1 1 auto;
+        min-width: 40px;
+        height: 24px;
+        color: var(--main-text-color);
+    }
+
+    .tf-voice-message {
+        flex: 1 1 12em;
+        min-width: 0;
+        line-height: 1.35;
+    }
+
+    .tf-voice-notice {
+        padding-inline-end: 6px;
+        font-size: 0.9em;
+        line-height: 1.35;
+        color: var(--muted-text-color);
+    }
+
+    .tf-voice-actions {
+        flex: none;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        margin-inline-start: auto;
+    }
+
+    .tf-voice-stop {
+        white-space: nowrap;
+    }
+
+    .tf-voice-spinner,
+    .tf-voice-error-icon {
+        flex: none;
+        font-size: 1.2em;
+    }
+}
+
+:root.tf-touch .tf-voice-bar {
+    padding: 6px 6px 6px 12px;
+
+    .tf-voice-actions {
+        gap: 6px;
+    }
+
+    .tf-voice-actions .icon-action,
+    .tf-voice-actions .btn,
+    .tf-voice-undo {
+        min-width: 44px;
+        min-height: 44px;
+    }
+}
+
+@media (max-width: 480px) {
+    .tf-voice-bar {
+        .tf-voice-label {
+            display: none;
+        }
+
+        .tf-voice-row {
+            gap: 6px;
+        }
+
+        .tf-voice-level {
+            min-width: 16px;
+        }
+
+        .tf-voice-actions {
+            gap: 2px;
+        }
+
+        .tf-voice-stop {
+            padding-inline: 10px;
+        }
+    }
+}
+
+@media (max-height: 500px) {
+    .tf-voice-bar {
+        padding-block: 2px;
+
+        .tf-voice-label {
+            display: none;
+        }
+
+        .tf-voice-row {
+            min-height: 44px;
+        }
+
+        .tf-voice-notice {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+    }
+}
+
+@keyframes tf-voice-bar-in {
+    from {
+        opacity: 0;
+        transform: translateY(6px);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .tf-voice-bar,
+    .tf-voice-bar .bx-spin {
+        animation: none;
+    }
+}

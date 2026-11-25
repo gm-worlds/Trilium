@@ -14,6 +14,7 @@ import syncOptions from "../../services/sync_options.js";
 import { ValidationError } from "../../errors.js";
 import { getTfUser } from "../../tf/identity.js"; // tf: per-person options
 import { isTfOwnOption } from "../../tf/options.js"; // tf: options of the embedding
+import { assertTfOptionWritable, isTfCustomCssOff, tfReportedOptions } from "../../tf/policy.js"; // tf: refused options
 
 // options allowed to be updated directly in the Options dialog
 const ALLOWED_OPTIONS = new Set<OptionNames>([
@@ -220,6 +221,7 @@ function getOptions() {
         resultMap["databaseReadonly"] = "true";
     }
 
+    Object.assign(resultMap, tfReportedOptions()); // tf: AI, sync, SQL console, scripting off
     return resultMap;
 }
 
@@ -240,6 +242,7 @@ async function updateOptions(req: Request) {
     // synchronous sql.transactional() cannot await promises — the transaction would commit at the
     // first await and changeLanguage() would run outside it. Wrap the option-setting loop manually
     // so a failure mid-batch still rolls back earlier options in the same request.
+    for (const optionName in req.body) assertTfOptionWritable(optionName); // tf: refuse the batch before any write
     getSql().transactional(() => {
         for (const optionName in req.body) {
             if (!update(optionName, req.body[optionName])) {
@@ -259,6 +262,7 @@ function update(name: string, value: string) {
     if (!isAllowed(name)) {
         return false;
     }
+    assertTfOptionWritable(name); // tf: 403 for options Taskforce manages
 
     if (name !== "openNoteContexts") {
         const logValue = (WRITE_ONLY_OPTIONS as Set<string>).has(name)
@@ -273,6 +277,7 @@ function update(name: string, value: string) {
 }
 
 function getUserThemes() {
+    if (isTfCustomCssOff()) return []; // tf: no user-made themes with scripts off
     const notes = searchService.searchNotes("#appTheme", { ignoreHoistedNote: true });
     const ret: UserTheme[] = [];
 

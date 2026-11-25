@@ -32,6 +32,7 @@ describe("Taskforce WebSocket filtering", () => {
         process.env.TF_GATEWAY_KEY = "ws-key";
         enableTfEmbed(true);
         cls.init(() => options.createOption("tfu.alice.theme" as "theme", "next-dark", false));
+        cls.init(() => options.createOption("tfu.alice.tfTreeExpanded" as "theme", JSON.stringify({ b1: 1, b2: 0 }), false));
     });
 
     afterAll(() => {
@@ -85,5 +86,35 @@ describe("Taskforce WebSocket filtering", () => {
 
         const ping: WebSocketMessage = { type: "ping" };
         expect(tfMessageForSocket(sockets.alice, ping, "same")).toBe("same");
+    });
+
+    it("gives branch rows each person's own expansion and keeps tree state rows on the server", () => {
+        const sockets: Record<string, WebSocket> = {};
+        for (const id of [ "alice", "bob" ]) {
+            const req = upgradeRequest({ "x-tf-gateway-key": "ws-key", "x-tf-user-id": id, "x-tf-role": "edit" });
+            expect(allowTfUpgrade(req)).toBe(true);
+            sockets[id] = {} as WebSocket;
+            tagTfSocket(sockets[id], req);
+        }
+        const branch = (branchId: string, isExpanded: boolean) => ({
+            ...optionChange("x", "y"), entityName: "branches", entityId: branchId,
+            entity: { branchId, noteId: "n", parentNoteId: "root", isExpanded }
+        }) as EntityChange;
+
+        const message: WebSocketMessage = {
+            type: "frontend-update",
+            data: {
+                lastSyncedPush: 0,
+                entityChanges: [ branch("b1", false), branch("b2", true), branch("b3", true),
+                    optionChange("tfu.alice.tfTreeExpanded", "{}") ]
+            }
+        };
+        const json = JSON.stringify(message);
+        const rows = (socket: WebSocket) => (JSON.parse(tfMessageForSocket(socket, message, json)).data.entityChanges as EntityChange[])
+            .map((c) => [ c.entityId, (c.entity as { isExpanded?: boolean } | undefined)?.isExpanded ]);
+
+        expect(rows(sockets.alice)).toEqual([ [ "b1", true ], [ "b2", false ], [ "b3", true ] ]);
+        expect(rows(sockets.bob)).toEqual([ [ "b1", false ], [ "b2", true ], [ "b3", true ] ]);
+        expect(message.data.entityChanges[0].entity).toMatchObject({ isExpanded: false });
     });
 });

@@ -10,6 +10,8 @@ export interface TabStripTabDefinition<T extends string> {
     title: string;
     /** A full icon class, e.g. `bx bx-list-ul`. */
     icon: string;
+    /** A count shown on the tab. */
+    badge?: string; // tf: comment count
 }
 
 interface TabStripProps<T extends string> {
@@ -78,6 +80,7 @@ function TabStripTab<T extends string>({ tab, active, labelled, withIcons, onSel
         >
             {(!labelled || withIcons) && <span class={clsx("tab-strip-tab-icon tn-icon", tab.icon)} />}
             {labelled && <span class="tab-strip-tab-label">{tab.title}</span>}
+            {tab.badge && <span class="tab-strip-tab-badge tf-tab-badge" aria-hidden="true">{tab.badge}</span>} {/* tf: */}
         </button>
     );
 }

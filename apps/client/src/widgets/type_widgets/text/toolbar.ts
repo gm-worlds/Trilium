@@ -3,6 +3,8 @@ import options from "../../../services/options.js";
 import { isExperimentalFeatureEnabled } from "../../../services/experimental_features.js";
 import { t } from "../../../services/i18n.js";
 import { IconAlignCenter } from "@ckeditor/ckeditor5-icons";
+import { getTfTeamHook } from "../../../tf/team/hooks.js"; // tf:
+import { getTfWorkToolbarItems } from "../../../tf/work/editor_host.js"; // tf:
 
 /**
  * Whether a text note is edited with the classic toolbar — a bar standing above the note — rather
@@ -81,7 +83,9 @@ export function buildMobileToolbar(aiAssistant: boolean) {
                         "|",
                         "specialCharacters", "emoji", "insertIcon",
                         "|",
-                        "dateTime", "insertTemplate", "markdownImport"
+                        "dateTime", "insertTemplate", "markdownImport",
+                        ...(getTfTeamHook("mobileInsertItems")?.() ?? []), // tf: comment tile
+                        ...getTfWorkToolbarItems() // tf: Make task, Remind me
                     ]
                 },
                 "textFormatting",

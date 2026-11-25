@@ -12,6 +12,7 @@ import treeService from "../../services/tree.js";
 import { isEmptyOrWhitespace, randomString } from "../../services/utils/index.js";
 import { getSql } from "../../services/sql/index.js";
 import { ValidationError } from "../../errors.js";
+import { getTfBranchExpanded, setTfBranchesExpanded } from "../../tf/expansion.js"; // tf: expansion per person
 
 /**
  * Code in this file deals with moving and cloning branches. The relationship between note and parent note is unique
@@ -157,6 +158,7 @@ function setExpanded(req: Request<{ branchId: string, expanded: string }>) {
     const expanded = parseInt(req.params.expanded);
 
     if (branchId !== "none_root") {
+        if (setTfBranchesExpanded([ branchId ], !!expanded)) return; // tf: the person's own state, shared one untouched
         getSql().execute("UPDATE branches SET isExpanded = ? WHERE branchId = ?", [expanded, branchId]);
         // we don't sync expanded label
         // also this does not trigger updates to the frontend, this would trigger too many reloads
@@ -186,7 +188,7 @@ function setExpandedForSubtree(req: Request<{ branchId: string, expanded: string
     const pending = startBranch ? [ startBranch ] : [];
 
     for (let branch = pending.pop(); branch; branch = pending.pop()) {
-        if (branch.branchId !== "none_root" && branch.isExpanded !== isExpanded) {
+        if (branch.branchId !== "none_root" && getTfBranchExpanded(branch) !== isExpanded) { // tf: the person's own state
             changedBranches.push(branch);
         }
 
@@ -199,6 +201,10 @@ function setExpandedForSubtree(req: Request<{ branchId: string, expanded: string
             }
         }
     }
+
+    if (setTfBranchesExpanded(changedBranches.map((branch) => branch.branchId), isExpanded)) { // tf: per person
+        return { branchIds: changedBranches.map((branch) => branch.branchId) }; // tf:
+    } // tf:
 
     getSql().executeMany(
         /*sql*/`UPDATE branches SET isExpanded = ${isExpanded ? 1 : 0} WHERE branchId IN (???)`,

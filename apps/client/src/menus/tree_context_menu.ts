@@ -23,6 +23,8 @@ import { showImageCompressionDialog } from "../widgets/dialogs/image_compression
 import type NoteTreeWidget from "../widgets/note_tree.js";
 import contextMenu, { type MenuCommandItem, type MenuItem } from "./context_menu.js";
 import NoteColorPicker from "./custom-items/NoteColorPicker.jsx";
+import { tfHandleTreeMenuItem } from "../tf/reach/hooks.js"; // tf:
+import { tfReorderMenuItems } from "../tf/mobile/row_reorder.js"; // tf:
 
 // TODO: Deduplicate once client/server is well split.
 interface ConvertToAttachmentResponse {
@@ -258,6 +260,7 @@ export async function buildTreeContextMenuItems(ctx: TreeContextMenuContext): Pr
             uiIcon: "bx bx-transfer",
             enabled: isNotRoot && !isHoisted && parentNotSearch && notHelp
         },
+        ...tfReorderMenuItems<TreeCommandNames>({ note, branch }), // tf: "Move up" and "Move down" on a phone
 
         { title: t("tree-context-menu.clone-to"), command: "cloneNotesTo", keyboardShortcut: "cloneNotesTo", uiIcon: "bx bx-duplicate", enabled: isNotRoot && !isHoisted && notHelp },
 
@@ -407,6 +410,7 @@ export async function handleTreeContextMenuSelect(
     if (command && COMMANDS_THAT_SHOW_A_NOTE.has(command)) {
         resolved.onRevealNote?.();
     }
+    if (tfHandleTreeMenuItem(item, { notePath, branchId: branch?.branchId })) return; // tf: "Record a voice note"
 
     if (command === "openNote") {
         await (resolved.noteContext ?? appContext.tabManager.getActiveContext())?.setNote(notePath);

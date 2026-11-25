@@ -26,11 +26,11 @@ export function TfTextSizeRow({ note }: { note: FNote | null | undefined }) {
         <FormListCustomItem>
             {/* The buttons keep the menu open, so the size can be stepped several times. */}
             <div className="tf-text-size-row" onClick={(e) => e.stopPropagation()}>
-                <span className="tf-text-size-label">
-                    <span className="bx bx-font-size" aria-hidden="true" />
+                <span className="tf-text-size-label" aria-hidden="true">
+                    <span className="bx bx-font-size" />
                     {t("tf.text_size")}
                 </span>
-                <span className="tf-text-size-controls">
+                <span className="tf-text-size-controls" role="group" aria-label={t("tf.text_size")}>
                     <ActionButton icon="bx bx-minus" text={t("tf.text_smaller")} noTooltipOnTouch
                         disabled={scale <= TEXT_SCALE_MIN} onClick={() => stepTextScale(-1)} />
                     <output className="tf-text-size-value" aria-live="polite">{formatTextScale(scale)}</output>

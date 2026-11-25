@@ -51,10 +51,18 @@ export async function openNotebook(browser, { as = "alice", layout = "phone", mo
     await cdp.send("Emulation.setEmitTouchEventsForMouse", { enabled: false });
     page.on("pageerror", (e) => console.error(`  [page error] ${String(e?.message ?? e).slice(0, 200)}`));
     await page.goto(`${HOST}/?as=${as}&layout=${layout}&mode=${mode}&chrome=0&next=${encodeURIComponent(next)}${query}`, { waitUntil: "load" });
-    const frame = await waitForFrame(page);
+    await waitForFrame(page);
     await waitFor(() => page.evaluate(() => window.__tfLog?.some((e) => e.method === "ready") && window.__tfHost?.connected), 30_000);
-    await frame.waitForSelector("#root-widget", { timeout: 30_000 });
-    await waitFor(() => frame.evaluate(() => document.documentElement.classList.contains("tf-embedded")), 15_000);
+    // The frame navigates more than once on the way in (enter, then the app); a handle taken
+    // early can be the document that is about to be replaced. Look the frame up again on every
+    // try and keep the one that holds the running app.
+    const frame = await waitFor(async () => {
+        const f = page.frames().find((x) => x.url().startsWith(FRAME_ORIGIN) && !x.url().includes("/__tf/enter"));
+        if (!f) return null;
+        const up = await f.evaluate(() => !!document.querySelector("#root-widget") && document.documentElement.classList.contains("tf-embedded"));
+        return up ? f : null;
+    }, 45_000, 150);
+    if (!frame) throw new Error("the notebook app did not come up in the frame");
     await sleep(1200);
     return { context, page, frame, cdp, touch: touchHelpers(page, cdp, frame) };
 }

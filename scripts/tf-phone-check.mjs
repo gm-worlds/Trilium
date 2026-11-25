@@ -669,7 +669,14 @@ async function scaleChecks(session, ids, demo) {
         await touch.pinch({ x: rc.x, y: rc.y }, 100, 180);
         await sleep(500);
     }
-    const r1 = await rmRead();
+    let r1 = await rmRead();
+    if (rc && r1 === r0) {
+        // The map keeps its zoom in the note: a run after an earlier one starts at the largest
+        // zoom, where spreading two fingers changes nothing. Pinch the other way.
+        await touch.pinch({ x: rc.x, y: rc.y }, 180, 100);
+        await sleep(500);
+        r1 = await rmRead();
+    }
     check("pinch on a relation map changes its zoom", rc && r1 !== r0, `${r0} -> ${r1}`);
     return session;
 }

@@ -6,6 +6,7 @@ import { getTfProtectedState, getTfUser } from "@triliumnext/core/src/tf/index.j
 
 import { apiRoute } from "../routes/route_api.js";
 import { getTfEngineVersion, getTfNotebookId, getTfParentOrigins, getUpstreamVersion, TF_SOURCE_URL } from "./env.js";
+import { registerTfWorkRoutes } from "./work/routes.js";
 
 export interface TfBootstrap {
     embed: true;
@@ -20,6 +21,7 @@ export interface TfBootstrap {
 export function registerTfRoutes() {
     apiRoute("get", "/api/tf/bootstrap", getBootstrap);
     apiRoute("get", "/api/tf/protected", () => getTfProtectedState());
+    registerTfWorkRoutes();
 }
 
 export function getBootstrap(): TfBootstrap {

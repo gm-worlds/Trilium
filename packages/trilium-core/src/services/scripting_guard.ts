@@ -1,4 +1,4 @@
-import { isTfScriptsOff } from "../tf/identity.js"; // tf: scripts off
+import { isTfEmbedded, isTfScriptsOff } from "../tf/identity.js"; // tf: scripts off, no SQL console
 import config from "./config.js";
 
 /**
@@ -15,7 +15,7 @@ export function assertScriptingEnabled(): void {
 }
 
 export function assertSqlConsoleEnabled(): void {
-    if (config.Security.sqlConsoleEnabled) {
+    if (config.Security.sqlConsoleEnabled && !isTfEmbedded()) { // tf: no SQL console when embedded
         return;
     }
     throw new Error(

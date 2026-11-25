@@ -34,7 +34,10 @@ describe("text scale", () => {
         expect(parseTextScale("garbage")).toBe(1);
         expect(parseTextScale(undefined)).toBe(1);
         expect(parseTextScale("9")).toBe(2.2);
-        expect(formatTextScale(1.25)).toBe("125 %");
+        expect(formatTextScale(1.25, "en")).toBe("125%");
+        expect(formatTextScale(1.25, "nl")).toBe("125%");
+        // French separates the sign with a no-break space, so it never wraps.
+        expect(formatTextScale(1, "fr")).toMatch(/^100[\u00a0\u202f]%$/);
     });
 
     it("keeps the pinched point in place", () => {

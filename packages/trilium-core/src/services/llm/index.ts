@@ -2,6 +2,7 @@ import { isProviderOfKind, type LlmProviderKind } from "@triliumnext/commons";
 
 import { getLog } from "../../services/log.js";
 import optionService from "../../services/options.js";
+import { assertTfAiAllowed } from "../../tf/policy.js"; // tf: no AI provider when embedded
 
 import { createHostProvider } from "./host_providers.js";
 import type { LlmProvider, ModelInfo } from "./types.js";
@@ -51,6 +52,7 @@ const PROVIDER_TYPES = ["anthropic", "openai", "google", "deepseek", "openrouter
  * branches rather than at module scope.
  */
 async function createProviderInstance(provider: string, apiKey: string, baseURL?: string): Promise<LlmProvider> {
+    assertTfAiAllowed(); // tf: no AI provider when embedded
     switch (provider) {
         case "anthropic":
             return new (await import("./providers/anthropic.js")).AnthropicProvider(apiKey, baseURL);

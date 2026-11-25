@@ -16,6 +16,7 @@ import FormToggle from "../../react/FormToggle";
 import { useTriliumOption, useTriliumOptionBool, useTriliumOptionJson } from "../../react/hooks";
 import OptionsPageHeader from "./components/OptionsPageHeader";
 import TimeSelector from "./components/TimeSelector";
+import { isTfHiddenUi } from "../../../tf/state.js"; // tf:
 
 export default function OtherSettings() {
     return (
@@ -28,7 +29,7 @@ export default function OtherSettings() {
             <AttachmentErasureTimeout />
             <RevisionSettings />
             <HtmlImportTags />
-            <ShareSettings />
+            {!isTfHiddenUi("shareOptions") && <ShareSettings />} {/* tf: /share pages are closed inside Taskforce */}
             <NetworkSettings />
         </>
     );

@@ -3,6 +3,7 @@
 import optionService from "./options.js";
 import config from "./config.js";
 import { normalizeUrl } from "./utils/index.js";
+import { isTfSyncOff } from "../tf/policy.js"; // tf: no sync when embedded
 
 /*
  * Primary configuration for sync is in the options (document), but we allow to override
@@ -23,6 +24,7 @@ export default {
         return host ? normalizeUrl(host) : host;
     },
     isSyncSetup: () => {
+        if (isTfSyncOff()) return false; // tf: no sync when embedded, whatever the options say
         // The option does not exist before setup creates the database, which means sync is not set up.
         const syncServerHost = config["Sync"]?.syncServerHost || optionService.getOptionOrNull("syncServerHost");
 

@@ -1,4 +1,42 @@
+.mobile-navigator-row:has(> .tf-row-open),
+.mobile-navigator-current-header:has(> .tf-row-open) {
+    position: relative;
+}
+
+.mobile-navigator-row:has(> .tf-row-open) > :is(.mobile-navigator-row-chevron, .mobile-navigator-row-count, .mobile-navigator-row-hidden-badge),
+.mobile-navigator-current-tile:has(.tf-row-open) .mobile-navigator-current-open {
+    pointer-events: none;
+}
+
+.mobile-navigator-row > .tf-row-open,
+.mobile-navigator-current-header > .tf-row-open {
+    position: absolute;
+    inset-block: 0;
+    inset-inline-start: 0;
+    inset-inline-end: calc(var(--tf-hit, 44px) + 8px);
+    z-index: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: inherit;
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+
+    &:focus-visible {
+        outline: 2px solid var(--tf-accent-solid, currentColor);
+        outline-offset: -2px;
+    }
+}
+
+.mobile-navigator-current-header > .mobile-navigator-current-action {
+    position: relative;
+    z-index: 1;
+}
+
 .mobile-navigator-row .tf-row-tools {
+    position: relative;
+    z-index: 1;
     display: flex;
     align-items: center;
     flex-shrink: 0;

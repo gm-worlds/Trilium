@@ -81,8 +81,14 @@ export function parseTextScale(value: unknown) {
     return Number.isFinite(parsed) && parsed > 0 ? clampTextScale(parsed) : 1;
 }
 
-export function formatTextScale(scale: number) {
-    return `${Math.round(scale * 100)} %`;
+/** The scale as the person's language writes a percentage. */
+export function formatTextScale(scale: number, locale = document.documentElement.lang || undefined) {
+    return formatPercent(scale, locale);
+}
+
+/** A share of 1 as `locale` writes a percentage: "40%", or "40 %" with a no-break space. */
+export function formatPercent(share: number, locale?: string) {
+    return new Intl.NumberFormat(locale, { style: "percent", maximumFractionDigits: 0 }).format(share);
 }
 
 /**

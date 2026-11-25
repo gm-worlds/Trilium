@@ -48,7 +48,7 @@ export function installTfMobile() {
     installTreeDrag(isTouch);
     installBlockHandle(isTouch);
     installTextSize(isTouch);
-    installKeyboardFollow();
+    installKeyboardFollow(isTouch);
     installMapGestures(isTouch);
     installImageGestures(isTouch);
     installIncludedTodos(isTouch);

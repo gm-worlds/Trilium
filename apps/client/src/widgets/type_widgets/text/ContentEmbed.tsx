@@ -28,6 +28,7 @@ import {
     watchContentEmbedTools
 } from "./content_embed_tools";
 import { findTextEditorAround } from "./editable_embed";
+import { TfEmbedStatus } from "../../../tf/reach/components.js"; // tf:
 
 /** An action on the embedded note or attachment, offered as a button in the title row. */
 export interface ContentEmbedAction {
@@ -245,6 +246,7 @@ export default function ContentEmbed({
                     />
                 )}
             </div>
+            <TfEmbedStatus viewScope={viewScope} /> {/* tf: transcript status of an audio attachment */}
         </>
     );
 }

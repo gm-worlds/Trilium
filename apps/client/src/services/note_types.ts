@@ -14,6 +14,7 @@ import { t } from "./i18n.js";
 import mimeTypes from "./mime_types.js";
 import server from "./server.js";
 import { escapeHtml } from "./utils.js";
+import { tfNoteTypeItems } from "../tf/reach/hooks.js"; // tf:
 
 export interface NoteTypeMapping {
     type: NoteType;
@@ -263,6 +264,7 @@ function buildNoteTypeItems(data: NoteTypeData, command?: TreeCommandNames) {
         if (groupItems.length === 0) continue;
         if (items.length > 0) items.push(SEPARATOR);
         items.push(...groupItems);
+        if (group === MENU_GROUPS[0]) items.push(...tfNoteTypeItems(command)); // tf: "Record a voice note"
     }
 
     const collections = builtIn("collection");

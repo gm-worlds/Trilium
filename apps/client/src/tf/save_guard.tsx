@@ -24,8 +24,18 @@ import Button from "../widgets/react/Button.js";
 import Modal from "../widgets/react/Modal.js";
 import { renewSession } from "./gateway.js";
 import { getTfBaseBlob, setTfBaseBlob, type TfCallInterceptor, type TfCallOptions, type TfInterceptedOptions } from "./state.js";
+import { getTfTeamHook } from "./team/hooks.js";
 
 export const TF_BASE_BLOB_HEADER = "tf-base-blob";
+/** Sent with every save of this page, so the engine can tell two tabs of one person apart. */
+export const TF_CLIENT_ID_HEADER = "tf-client-id";
+
+const clientId = Array.from(crypto.getRandomValues(new Uint8Array(12)), (byte) => byte.toString(16).padStart(2, "0")).join("");
+
+/** A random id made once per page load, kept in memory only. */
+export function getTfClientId() {
+    return clientId;
+}
 
 export interface TfConflict {
     conflict: true;
@@ -77,6 +87,7 @@ export const tfCallInterceptor: TfCallInterceptor = async (method, url, componen
             const body = await next(method, url, componentId, { ...options, tf });
             if (noteId) {
                 setTfBaseBlob(noteId, (body as { blobId?: string } | undefined)?.blobId);
+                getTfTeamHook("noteSaved")?.(noteId, options.data);
             }
             return body;
         } catch (e) {
@@ -97,8 +108,11 @@ export const tfCallInterceptor: TfCallInterceptor = async (method, url, componen
         }
     };
 
-    const base = noteId ? getTfBaseBlob(noteId) : undefined;
-    return run(base ? { [TF_BASE_BLOB_HEADER]: base } : undefined);
+    if (!noteId) {
+        return run();
+    }
+    const base = getTfBaseBlob(noteId);
+    return run({ ...(base ? { [TF_BASE_BLOB_HEADER]: base } : {}), [TF_CLIENT_ID_HEADER]: clientId });
 };
 
 async function resolveConflict(
@@ -116,14 +130,16 @@ async function resolveConflict(
     try {
         const choice = await choicePromise;
         if (choice === "mine") {
-            return await run({ [TF_BASE_BLOB_HEADER]: "*" });
+            return await run({ [TF_BASE_BLOB_HEADER]: "*", [TF_CLIENT_ID_HEADER]: clientId });
         }
 
         if (choice === "keepBoth") {
             await saveAsSibling(noteId, options.data as { content?: unknown } | undefined);
         }
         setTfBaseBlob(noteId, conflict.blobId);
-        reloadNoteContent(noteId);
+        // The editor ignores a reload while its own save is pending, and this save is the pending
+        // one, so the reload waits until `SpacedUpdate` has settled it.
+        setTimeout(() => reloadNoteContent(noteId), 0);
         return undefined;
     } finally {
         pendingConflicts.delete(noteId);

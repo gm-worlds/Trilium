@@ -3,6 +3,8 @@ import type { WidgetsByParent } from "../services/bundle.js";
 import options from "../services/options.js";
 import utils from "../services/utils.js";
 import { TaskforceButton, TfProtectedNotice } from "../tf/components.js"; // tf:
+import { TfNoteWorkBadges, TfWorkLaunchButtons } from "../tf/work/WorkComponents.js"; // tf:
+import { TfTeamSlot } from "../tf/team/hooks.js"; // tf:
 import GlobalMenu from "../widgets/buttons/global_menu.jsx";
 import LeftPaneToggle, { LeftPanePeekButton } from "../widgets/buttons/left_pane_toggle.js";
 import RightPaneToggle from "../widgets/buttons/right_pane_toggle.jsx";
@@ -128,6 +130,8 @@ export default class DesktopLayout {
                                                             .child(<NoteTitleWidget />)
                                                             .child(<NoteBadges />)
                                                             .child(<TfProtectedNotice />) // tf: protected notes opened by someone else
+                                                            .child(<TfTeamSlot name="title-row" />) // tf: presence, turn bar, comment markers
+                                                            .child(<TfNoteWorkBadges />) // tf: bell with the note's open reminders
                                                             .child(<SpacerWidget baseSize={0} growthFactor={1} />)
                                                             .child(<NoteActions />))
                                                         .child(
@@ -170,6 +174,8 @@ export default class DesktopLayout {
                 .css("height", "53px")
                 .class("horizontal")
                 .child(<TaskforceButton isHorizontalLayout={true} />) // tf: back to Taskforce
+                .child(<TfWorkLaunchButtons isHorizontalLayout={true} />) // tf: To-dos, Reminders
+                .child(<TfTeamSlot name="launch-bar" isHorizontalLayout={true} />) // tf: people here, what changed
                 .child(<LauncherContainer isHorizontalLayout={true} />)
                 .child(<GlobalMenu isHorizontalLayout={true} />);
         } else {
@@ -177,6 +183,8 @@ export default class DesktopLayout {
                 .css("width", "53px")
                 .class("vertical")
                 .child(<TaskforceButton isHorizontalLayout={false} />) // tf: back to Taskforce
+                .child(<TfWorkLaunchButtons isHorizontalLayout={false} />) // tf: To-dos, Reminders
+                .child(<TfTeamSlot name="launch-bar" isHorizontalLayout={false} />) // tf: people here, what changed
                 .child(<GlobalMenu isHorizontalLayout={false} />)
                 .child(<LauncherContainer isHorizontalLayout={false} />)
                 .child(<LeftPaneToggle isHorizontalLayout={false} />);

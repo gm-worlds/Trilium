@@ -223,6 +223,8 @@ function getNoteBlocks(req: Request<{ noteId: string }>) {
 
 /** Replaces the blocks of a text note that the `block` query parameter points at. */
 function updateNoteBlocks(req: Request<{ noteId: string }>) {
+    const tfConflict = checkTfSaveGuard(req); // tf: save guard when the client sends tf-base-blob
+    if (tfConflict) return tfConflict; // tf: save guard
     const { content, block } = getBlockRangeRequest(req);
     const { content: blocks, attachments } = req.body;
     if (typeof blocks !== "string") {
@@ -235,6 +237,7 @@ function updateNoteBlocks(req: Request<{ noteId: string }>) {
     }
 
     noteService.updateNoteData(req.params.noteId, newContent, attachments);
+    return tfSaveResult(req.params.noteId); // tf: save guard
 }
 
 function getBlockRangeRequest(req: Request<{ noteId: string }>) {

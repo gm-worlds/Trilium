@@ -48,6 +48,8 @@ import { buildQuoteTransformation, resolveQuoteSetting } from "./quotes.js";
 import { buildCustomTransformations, parseCustomReplacements } from "./replacements.js";
 import { buildToolbarConfig } from "./toolbar.js";
 import { createToolbarGroupMenuHost } from "./toolbar_group_menu.js";
+import { tfTeamEditorPlugins } from "../../../tf/team/hooks.js"; // tf:
+import { tfReachEditorConfig } from "../../../tf/reach/voice/editor_config.js"; // tf:
 
 /**
  * The only license key Trilium ever passes to CKEditor. Every premium plugin the editor used has
@@ -452,11 +454,13 @@ export async function buildConfig(opts: BuildEditorOptions): Promise<EditorConfi
     config.listStartPrompt = async (label, current) =>
         parseListStart(await prompt({ title: label, defaultValue: String(current) }));
     config.tableColumnBar = { bottomObstacle: getShownToolbarIsland };
+    const tfTeamPlugins = await tfTeamEditorPlugins() as NonNullable<EditorConfig["extraPlugins"]>; // tf: mentions, comment tile
+    if (tfTeamPlugins.length) config.extraPlugins = [ ...(config.extraPlugins ?? []), ...tfTeamPlugins ]; // tf:
 
-    return {
+    return tfReachEditorConfig({ // tf: voice note entries
         ...config,
         ...buildToolbarConfig(opts.isClassicEditor, !!aiAssistantStream)
-    };
+    });
 }
 
 /** The `contentEmbed` members that call the handlers `getHandlers()` returns at the time. */

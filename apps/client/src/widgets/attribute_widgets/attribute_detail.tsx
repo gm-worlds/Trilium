@@ -35,6 +35,7 @@ import { ATTR_HELP, AttrHelpEntry } from "./attr_help.js";
 import { attributeKindIcon, DEFINITION_TYPE_ICONS, RELATION_DEFINITION_TYPE } from "./attribute_types.js";
 import LabelValueInput, { getTypedInputForLabel, useLabelValueSuggestions } from "./label_value_input.js";
 import ValuesInput from "./values_input.jsx";
+import { tfAttributeHelp } from "../../tf/reach/hooks.js"; // tf:
 
 export interface AttributeDetailOpts {
     allAttributes?: Attribute[];
@@ -814,6 +815,8 @@ export function isSystemAttribute(attrType: AttrType, name: string) {
 
 /** Normalised so that the shorthand entries, which are the description alone, read like the rest. */
 export function lookupAttributeHelp(attrType: AttrType, name: string): AttrHelpEntry | undefined {
+    const tfHelp = tfAttributeHelp(attrType ?? undefined, name); // tf: share page labels do nothing inside Taskforce
+    if (tfHelp) return tfHelp; // tf:
     const entry = attrType ? ATTR_HELP[attrType]?.[name] : undefined;
     return typeof entry === "string" ? { description: entry } : entry;
 }

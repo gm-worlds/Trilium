@@ -11,6 +11,7 @@ import { SearchNoteList } from "./collections/NoteList";
 import Button from "./react/Button";
 import { useNoteContext, useTriliumEvent } from "./react/hooks";
 import NoItems from "./react/NoItems";
+import { TfOtherNotebooks } from "../tf/reach/components.js"; // tf:
 
 enum SearchResultState {
     NO_RESULTS,
@@ -69,6 +70,10 @@ export default function SearchResult() {
                     highlightedTokens={highlightedTokens}
                     ntxId={ntxId}
                 />
+            )}
+
+            {(state === SearchResultState.NO_RESULTS || state === SearchResultState.GOT_RESULTS) && !isSearching && (
+                <TfOtherNotebooks query={note?.getLabelValue("searchString") ?? ""} variant="list" /> /* tf: */
             )}
         </div>
     );

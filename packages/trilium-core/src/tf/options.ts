@@ -178,7 +178,8 @@ export function applyTfOptionOverlay<M extends Record<string, string>>(map: M): 
 /**
  * Rewrites the entity changes of a `frontend-update` message for one connected person: their own
  * `tfu.<id>.<name>` options arrive under the plain name, other people's are dropped, and a shared
- * change to an option the person has overridden is dropped too.
+ * change to an option the person has overridden is dropped too. Own rows that are no option of the
+ * client (`tfTreeExpanded`) stay on the server.
  */
 export function filterTfEntityChangesForUser(entityChanges: EntityChange[], userId: string | null): EntityChange[] {
     const ownPrefix = userId ? tfUserOptionName(userId, "") : null;
@@ -196,6 +197,9 @@ export function filterTfEntityChangesForUser(entityChanges: EntityChange[], user
                 continue;
             }
             const plainName = name.substring(ownPrefix.length);
+            if (!isTfPerUserOption(plainName)) {
+                continue;
+            }
             const entity = change.entity ? { ...change.entity, name: plainName } : change.entity;
             result.push({ ...change, entityId: plainName, entity });
             continue;

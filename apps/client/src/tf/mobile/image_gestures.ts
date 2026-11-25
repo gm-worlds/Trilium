@@ -6,9 +6,13 @@
  * In the viewer, react-zoom-pan-pinch spots a double tap on its own `touchstart`, and the `touchend`
  * that follows cuts its zoom animation short. So the second tap of a double tap never reaches it;
  * it gets the `dblclick` it handles for a mouse instead, at the finger's position.
+ *
+ * Both listeners are passive. The page never zooms on a double tap (`touch-action` in `touch.css`),
+ * and the mouse events the second tap is still mirrored as are swallowed (`swallowNextClick()`).
  */
 import appContext from "../../components/app_context.js";
 import { distance, type Point } from "./gestures.js";
+import { swallowNextClick } from "./touch_session.js";
 
 const CONTENT_IMAGE = ".ck-content img";
 const VIEWER = ".image-viewer-root";
@@ -75,7 +79,7 @@ export function installImageGestures(isTouch: () => boolean) {
             return;
         }
         lastTap = null;
-        e.preventDefault();
+        swallowNextClick({ doubleClick: true });
         if (start.image) {
             openViewer(start.image);
         } else {
@@ -83,7 +87,7 @@ export function installImageGestures(isTouch: () => boolean) {
             const target = document.elementFromPoint(at.x, at.y) ?? start.target;
             target.dispatchEvent(new MouseEvent("dblclick", { bubbles: true, cancelable: true, clientX: at.x, clientY: at.y }));
         }
-    }, { capture: true, passive: false });
+    }, { capture: true, passive: true });
 }
 
 function pointOf(touch: Touch): Point {

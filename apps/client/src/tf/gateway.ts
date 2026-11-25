@@ -123,6 +123,13 @@ export function createRealtime(openSocket: () => WebSocket): TfRealtime {
     let closed = false;
     let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
 
+    /** Also fires `__open` after each (re)connect and `__close` after each drop, for state to resend or clear. */
+    function emit(event: string, data: unknown) {
+        for (const listener of listeners.get(event) ?? []) {
+            listener(data);
+        }
+    }
+
     function connect() {
         if (closed) {
             return;
@@ -133,6 +140,7 @@ export function createRealtime(openSocket: () => WebSocket): TfRealtime {
             for (const frame of outbox.splice(0)) {
                 socket?.send(frame);
             }
+            emit("__open", {});
         };
         socket.onmessage = (event) => {
             let frame: { event?: string; data?: unknown };
@@ -144,15 +152,14 @@ export function createRealtime(openSocket: () => WebSocket): TfRealtime {
             if (!frame.event) {
                 return;
             }
-            for (const listener of listeners.get(frame.event) ?? []) {
-                listener(frame.data);
-            }
+            emit(frame.event, frame.data);
         };
         socket.onclose = () => {
             socket = null;
             if (closed) {
                 return;
             }
+            emit("__close", {});
             attempt++;
             const delay = Math.min(1000 * 2 ** Math.min(attempt - 1, 5), 30_000);
             reconnectTimer = setTimeout(connect, delay);

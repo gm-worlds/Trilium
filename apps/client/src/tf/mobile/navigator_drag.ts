@@ -10,7 +10,9 @@
  * - Escape, a second finger, or letting go where the row started cancels.
  *
  * The navigator rows' own long-press handlers never see these touches: the listeners here run in
- * the capture phase on `document` and stop the events at the row.
+ * the capture phase and stop the events at the row. `touchstart` is passive and the rest is
+ * attached only while a row is pressed (passive) or lifted (blocking, `touch_session.ts`), so a
+ * scroll through the list never waits for this file.
  */
 import froca from "../../services/froca.js";
 import { tfHaptic } from "../bridge.js";
@@ -18,6 +20,7 @@ import { AutoScroller, DragGhost, InsertionLine } from "./drag_visuals.js";
 import { LIFT_DELAY_MS, movedBeyond, type Point } from "./gestures.js";
 import { moveWithUndo } from "./moves.js";
 import { type Dwell, type DropResult, findDropTarget, moveOpFor } from "./reorder.js";
+import { GestureListeners, listenModeFor, lockScroll, preventIfCancelable, swallowNextClick } from "./touch_session.js";
 
 const ROW = ".mobile-navigator-row";
 const LIST = ".mobile-navigator-list";
@@ -40,17 +43,20 @@ interface Drag {
     dwellTimer: number;
     result: DropResult | null;
     insideRow: HTMLElement | null;
+    unlock: () => void;
 }
 
 let state: State = { kind: "idle" };
 let allowContextMenu = false;
+const listeners = new GestureListeners({ move: onTouchMove, end: onTouchEnd, cancel: () => cancel() });
+
+function setState(next: State) {
+    state = next;
+    listeners.set(listenModeFor(next.kind === "idle" ? "idle" : next.kind === "pressed" ? "pressed" : "owned"));
+}
 
 export function installNavigatorDrag(isTouch: () => boolean) {
-    const capture = { capture: true, passive: false } as const;
-    document.addEventListener("touchstart", (e) => onTouchStart(e, isTouch), capture);
-    document.addEventListener("touchmove", onTouchMove, capture);
-    document.addEventListener("touchend", onTouchEnd, capture);
-    document.addEventListener("touchcancel", () => cancel(), capture);
+    document.addEventListener("touchstart", (e) => onTouchStart(e, isTouch), { capture: true, passive: true });
     document.addEventListener("contextmenu", onContextMenu, true);
     document.addEventListener("keydown", (e) => {
         if (e.key === "Escape" && state.kind !== "idle") {
@@ -91,7 +97,7 @@ function onTouchStart(e: TouchEvent, isTouch: () => boolean) {
     e.stopPropagation();
     const touch = e.touches[0];
     const start = { x: touch.clientX, y: touch.clientY };
-    state = { kind: "pressed", row, start, timer: window.setTimeout(() => lift(), LIFT_DELAY_MS) };
+    setState({ kind: "pressed", row, start, timer: window.setTimeout(() => lift(), LIFT_DELAY_MS) });
 }
 
 function onTouchMove(e: TouchEvent) {
@@ -103,18 +109,18 @@ function onTouchMove(e: TouchEvent) {
     if (state.kind === "pressed") {
         if (movedBeyond(state.start, point)) {
             clearTimeout(state.timer);
-            state = { kind: "idle" };
+            setState({ kind: "idle" });
         }
         return;
     }
     if (state.kind === "idle") {
         return;
     }
-    e.preventDefault();
+    preventIfCancelable(e);
     e.stopPropagation();
     const drag = state.drag;
     if (state.kind === "lifted" && movedBeyond(drag.start, point)) {
-        state = { kind: "dragging", drag };
+        setState({ kind: "dragging", drag });
     }
     drag.last = point;
     drag.ghost.moveTo(point.x, point.y);
@@ -127,14 +133,15 @@ function onTouchMove(e: TouchEvent) {
 function onTouchEnd(e: TouchEvent) {
     if (state.kind === "pressed") {
         clearTimeout(state.timer);
-        state = { kind: "idle" };
+        setState({ kind: "idle" });
         return;
     }
     if (state.kind === "idle") {
         return;
     }
-    e.preventDefault();
+    preventIfCancelable(e);
     e.stopPropagation();
+    swallowNextClick();
     const current = state;
     if (current.kind === "lifted") {
         const { row, last } = current.drag;
@@ -161,7 +168,7 @@ function lift() {
     const list = row.closest<HTMLElement>(LIST);
     const scrollElement = row.closest<HTMLElement>(".mobile-navigator-scroll");
     if (!list || !scrollElement) {
-        state = { kind: "idle" };
+        setState({ kind: "idle" });
         return;
     }
     tfHaptic("light");
@@ -179,9 +186,10 @@ function lift() {
         dwell: null,
         dwellTimer: 0,
         result: null,
-        insideRow: null
+        insideRow: null,
+        unlock: lockScroll(scrollElement)
     };
-    state = { kind: "lifted", drag };
+    setState({ kind: "lifted", drag });
 }
 
 function rowsOf(list: HTMLElement) {
@@ -260,14 +268,15 @@ function finish(drag: Drag) {
     drag.line.remove();
     drag.row.classList.remove("tf-drag-source");
     drag.insideRow?.classList.remove("tf-drop-inside");
+    drag.unlock();
     document.body.classList.remove("tf-dragging");
-    state = { kind: "idle" };
+    setState({ kind: "idle" });
 }
 
 function cancel() {
     if (state.kind === "pressed") {
         clearTimeout(state.timer);
-        state = { kind: "idle" };
+        setState({ kind: "idle" });
     } else if (state.kind !== "idle") {
         finish(state.drag);
     }

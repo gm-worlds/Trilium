@@ -4,7 +4,8 @@
  * The gateway adds `x-tf-gateway-key` (equal to the engine's `TF_GATEWAY_KEY`) and the identity
  * headers to every request it forwards. {@link tfGatewayGuard} refuses anything without the key,
  * HTTP and WebSocket upgrade alike, so nothing on the loopback port is reachable around the
- * gateway. The identity it parses is copied into the execution context by
+ * gateway, and answers 404 for the routes an embedded engine never serves (`route_policy.ts`).
+ * The identity it parses is copied into the execution context by
  * {@link applyTfRequestContext}, which `route_api.ts` calls for every route.
  */
 import { becca_loader, cls } from "@triliumnext/core";
@@ -14,6 +15,7 @@ import type express from "express";
 import type { IncomingMessage } from "http";
 
 import { getTfGatewayKey } from "./env.js";
+import { decideTfRoute } from "./route_policy.js";
 
 const HEALTH_CHECK_PATH = "/api/health-check";
 const tfUsers = new WeakMap<IncomingMessage, TfUser | null>();
@@ -29,13 +31,25 @@ export function tfGatewayGuard(req: express.Request, res: express.Response, next
         return;
     }
 
+    let user: TfUser | null;
     try {
-        tfUsers.set(req, parseTfIdentityHeaders(req.headers));
+        user = parseTfIdentityHeaders(req.headers);
     } catch (e) {
         res.status(400).type("text/plain").send(e instanceof Error ? e.message : "Bad request");
         return;
     }
 
+    const decision = decideTfRoute(req.originalUrl || req.url, user?.role ?? null);
+    if (decision === "refuse") {
+        res.status(404).type("text/plain").send("Not found");
+        return;
+    }
+    if (decision === "read-only") {
+        res.status(403).json({ tfReadOnly: true, message: "This notebook is read-only for you." });
+        return;
+    }
+
+    tfUsers.set(req, user);
     next();
 }
 

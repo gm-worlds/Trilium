@@ -11,6 +11,7 @@ import { getPlatform } from "./platform";
 import { isSetupAuthRequired, isSetupSecondFactorRequired } from "./setup_auth";
 import { getSetupTargetScreen, hasExistingData, isSetupRequested } from "./setup_mode";
 import sqlInit from "./sql_init";
+import { isTfCustomCssOff, tfBootstrapTheme } from "../tf/policy"; // tf: no custom CSS with scripts off
 
 export default function getSharedBootstrapItems(assetPath: string, dbInitialized: boolean) {
     const sql = getSql();
@@ -53,8 +54,9 @@ export default function getSharedBootstrapItems(assetPath: string, dbInitialized
 
     // Database initialized.
     const options = optionService.getOptionMap();
-    const theme = options.theme;
-    const themeNote = attributes.getNoteWithLabel("appTheme", theme);
+    const tfCssOff = isTfCustomCssOff(); // tf: no user-made theme or #appCss with scripts off
+    const theme = tfBootstrapTheme(options.theme); // tf: a user-made theme reads as "next"
+    const themeNote = tfCssOff ? null : attributes.getNoteWithLabel("appTheme", theme); // tf:
     const themeUseNextAsBase = themeNote?.getAttributeValue("label", "appThemeBase") ?? undefined;
 
     return {
@@ -69,7 +71,7 @@ export default function getSharedBootstrapItems(assetPath: string, dbInitialized
         customThemeCssUrl: getCustomThemeCssUrl(theme, themeNote),
         themeCssUrl: getThemeCssUrl(theme, commonItems.assetPath, themeNote) as string | false,
         themeUseNextAsBase: themeNote?.getAttributeValue("label", "appThemeBase") as "next" | "next-light" | "next-dark",
-        appCssNoteIds: getAppCssNoteIds(),
+        appCssNoteIds: tfCssOff ? [] : getAppCssNoteIds(), // tf:
     }
 }
 

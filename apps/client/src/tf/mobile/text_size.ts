@@ -11,6 +11,7 @@ import options from "../../services/options.js";
 import { tfHaptic } from "../bridge.js";
 import { scrollParentOf } from "./drag_visuals.js";
 import { anchoredScrollTop, distance, midpoint, parseTextScale, pinchedTextScale, pinchFactor, snappedToOne, steppedTextScale } from "./gestures.js";
+import { GestureListeners, lockScroll } from "./touch_session.js";
 
 export const TEXT_SCALE_OPTION = "tfTextScale";
 const SAVE_DELAY_MS = 400;
@@ -63,37 +64,26 @@ export function applyTextScale(value: number, root: HTMLElement = document.docum
     root.classList.toggle("tf-text-scaled", value !== 1);
 }
 
-/** Reads the stored size and starts listening for pinches. */
+/**
+ * Reads the stored size and starts listening for pinches. Every listener is passive: the note's
+ * scroller has `touch-action: pan-x pan-y` (`touch.css`), so the browser never zooms the page, and
+ * the scroller is locked while the pinch lasts, so two fingers do not also scroll it.
+ */
 export function installTextSize(isTouch: () => boolean) {
     scale = parseTextScale(options.get(TEXT_SCALE_OPTION as never));
     applyTextScale(scale);
 
-    let pinch: { start: number; base: number; scroller: HTMLElement; last: number } | null = null;
+    let pinch: { start: number; base: number; scroller: HTMLElement; last: number; unlock: () => void } | null = null;
 
-    document.addEventListener("touchstart", (e) => {
-        if (e.touches.length !== 2 || !isTouch()) {
-            pinch = null;
-            return;
-        }
-        const [ a, b ] = [ e.touches[0], e.touches[1] ];
-        const targets = [ a.target, b.target ].map((target) => target instanceof Element ? target : null);
-        if (targets.some((target) => !target?.closest(PINCH_AREAS) || target.closest(OWN_PINCH))) {
-            pinch = null;
-            return;
-        }
-        pinch = {
-            start: distance(pointOf(a), pointOf(b)),
-            base: scale,
-            scroller: scrollParentOf(targets[0]),
-            last: scale
-        };
-    }, { capture: true, passive: true });
-
-    document.addEventListener("touchmove", (e) => {
+    const stop = () => {
+        pinch?.unlock();
+        pinch = null;
+        listeners.set("none");
+    };
+    const move = (e: TouchEvent) => {
         if (!pinch || e.touches.length !== 2) {
             return;
         }
-        e.preventDefault();
         const a = pointOf(e.touches[0]);
         const b = pointOf(e.touches[1]);
         const next = pinchedTextScale(pinch.base, pinchFactor(pinch.start, distance(a, b)));
@@ -106,15 +96,35 @@ export function installTextSize(isTouch: () => boolean) {
         pinch.last = next;
         setTextScale(next);
         scroller.scrollTop = top;
-    }, { capture: true, passive: false });
-
+    };
     const end = (e: TouchEvent) => {
         if (pinch && e.touches.length < 2) {
-            pinch = null;
+            stop();
         }
     };
-    document.addEventListener("touchend", end, { capture: true, passive: true });
-    document.addEventListener("touchcancel", end, { capture: true, passive: true });
+    const listeners = new GestureListeners({ move, end, cancel: end });
+
+    document.addEventListener("touchstart", (e) => {
+        if (e.touches.length !== 2 || !isTouch()) {
+            stop();
+            return;
+        }
+        const [ a, b ] = [ e.touches[0], e.touches[1] ];
+        const targets = [ a.target, b.target ].map((target) => target instanceof Element ? target : null);
+        if (targets.some((target) => !target?.closest(PINCH_AREAS) || target.closest(OWN_PINCH))) {
+            stop();
+            return;
+        }
+        const scroller = scrollParentOf(targets[0]);
+        pinch = {
+            start: distance(pointOf(a), pointOf(b)),
+            base: scale,
+            scroller,
+            last: scale,
+            unlock: lockScroll(scroller)
+        };
+        listeners.set("watch");
+    }, { capture: true, passive: true });
 }
 
 function pointOf(touch: Touch) {

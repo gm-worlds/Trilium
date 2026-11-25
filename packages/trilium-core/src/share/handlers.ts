@@ -23,6 +23,7 @@ import type SAttachment from "./shaca/entities/sattachment.js";
 import type SNote from "./shaca/entities/snote.js";
 import shaca from "./shaca/shaca.js";
 import shacaLoader from "./shaca/shaca_loader.js";
+import { tfRawShareHeaders } from "../tf/policy.js"; // tf: sandboxed raw share content
 
 /** A share request, reduced to what the handlers read, so both Express and the browser can supply it. */
 export interface ShareRequest {
@@ -177,6 +178,7 @@ function renderNote(note: SNote | undefined, req: ShareRequest): ShareReply {
         }
 
         headers["Content-Type"] = note.mime;
+        Object.assign(headers, tfRawShareHeaders(note.mime)); // tf: sandbox, nosniff, HTML/SVG/XML as a download
 
         return { status: 200, headers, body: note.getContent() };
     }
@@ -327,7 +329,8 @@ function viewNote(req: ShareRequest): ShareReply {
             ...noIndexHeaders(note),
             "Cache-Control": "no-cache, no-store, must-revalidate",
             "Content-Type": note.mime,
-            ...utils.getInlineContentHeaders(note.mime)
+            ...utils.getInlineContentHeaders(note.mime),
+            ...tfRawShareHeaders(note.mime) // tf: sandbox, nosniff, HTML/SVG/XML as a download
         },
         body: note.getContent()
     };

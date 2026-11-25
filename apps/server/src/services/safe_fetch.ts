@@ -6,6 +6,9 @@ import { validateFetchableUrl } from "@triliumnext/core/src/services/request.js"
 import ipaddr from "ipaddr.js";
 import type { Agent, RequestInit as UndiciRequestInit, Response as UndiciResponse } from "undici";
 
+import { isTfEmbedded } from "@triliumnext/core/src/tf/identity.js"; // tf: one guard for content fetches
+import { tfOutboundFetch } from "../tf/outbound.js"; // tf:
+
 const FETCH_TIMEOUT_MS = 5000;
 const MAX_REDIRECTS = 5;
 
@@ -219,6 +222,7 @@ function withDispatcherCleanup(response: UndiciResponse, dispatcher: Agent): Res
  */
 async function safeFetch(url: string, options: RequestInit = {}, policy: SafeFetchPolicy = {}): Promise<Response> {
     const { allowPrivateNetwork = false, timeoutMs = FETCH_TIMEOUT_MS, maxRedirects = MAX_REDIRECTS } = policy;
+    if (isTfEmbedded()) return await tfOutboundFetch(url, options, { maxRedirects }); // tf: strict guard when embedded
     let currentUrl = url;
 
     // Imported here rather than at module scope so undici lands in a lazy chunk:

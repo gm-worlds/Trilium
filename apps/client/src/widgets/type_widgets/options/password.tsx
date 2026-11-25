@@ -24,6 +24,7 @@ import MfaStatusBadge, { MfaStatusTone } from "./components/MfaStatusBadge";
 import OptionsPageHeader from "./components/OptionsPageHeader";
 import TimeSelector from "./components/TimeSelector";
 import { TotpSettings } from "./totp";
+import { isTfHiddenUi } from "../../../tf/state.js"; // tf:
 
 export default function PasswordSettings() {
     return (
@@ -32,7 +33,7 @@ export default function PasswordSettings() {
             {/* The sign-in method (and its two-factor / OAuth settings) is only available on the server
                 build — the desktop app authenticates differently — matching the former MFA page's
                 serverOnly scope. */}
-            {!isElectron() && <SignInMethod />}
+            {!isElectron() && !isTfHiddenUi("signInMethod") && <SignInMethod />} {/* tf: Taskforce is the sign-in */}
             <ChangePassword />
             <ProtectedSessionTimeout />
         </>
@@ -56,7 +57,7 @@ function ChangePassword() {
                 />
             </OptionCardSection>
 
-            <OptionCardSection
+            {!isTfHiddenUi("passwordReset") && <OptionCardSection // tf: a reset is refused inside Taskforce
                 label={t("password.reset_password")}
                 description={t("password.reset_password_description")}
             >
@@ -73,7 +74,7 @@ function ChangePassword() {
                         toast.showError(t("password.reset_success_message"));
                     }}
                 />
-            </OptionCardSection>
+            </OptionCardSection>}
         </Card>
 
         {createPortal(

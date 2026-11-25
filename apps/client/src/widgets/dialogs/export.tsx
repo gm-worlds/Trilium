@@ -6,6 +6,7 @@ import froca from "../../services/froca";
 import { t } from "../../services/i18n";
 import open from "../../services/open";
 import tree from "../../services/tree";
+import { tfExportBranch, tfExportResultText, withTfExportFormats } from "../../tf/work/export_word.js"; // tf:
 import utils from "../../services/utils";
 import { ExtendedAdmonition } from "../react/Admonition";
 import { Badge } from "../react/Badge";
@@ -53,7 +54,7 @@ export default function ExportDialog() {
         setShown(true);
     });
 
-    const formats = exportType === "subtree" ? subtreeFormats : singleFormats;
+    const formats = withTfExportFormats(exportType === "subtree" ? subtreeFormats : singleFormats); // tf: Word (.docx)
     const selectedFormat = exportType === "subtree" ? subtreeFormat : singleFormat;
     const setSelectedFormat = exportType === "subtree" ? setSubtreeFormat : setSingleFormat;
 
@@ -124,6 +125,8 @@ const singleFormats: ExportFormat[] = [HTML_FORMAT, MARKDOWN_FORMAT];
 
 // One-line summary of what the chosen export actually produces, shown in the dialog's result admonition.
 function exportResultText(exportType: "subtree" | "single", format: string) {
+    const tfText = tfExportResultText(exportType, format); // tf: Word (.docx)
+    if (tfText) return tfText; // tf:
     if (format === "opml") {
         return t("export.result_opml");
     }
@@ -137,6 +140,7 @@ function exportResultText(exportType: "subtree" | "single", format: string) {
 }
 
 async function exportBranch(branchId: string, type: string, format: string, title: string) {
+    if (tfExportBranch(branchId, type, format)) return; // tf: Word (.docx)
     const taskId = utils.randomString(10);
 
     // Desktop: stream subtree zip exports straight to a user-chosen file, bypassing

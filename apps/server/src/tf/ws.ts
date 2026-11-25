@@ -4,7 +4,7 @@
  * messages (see `filterTfEntityChangesForUser()`).
  */
 import type { WebSocketMessage } from "@triliumnext/commons";
-import { filterTfEntityChangesForUser, isTfEmbedded } from "@triliumnext/core/src/tf/index.js";
+import { applyTfExpansionToEntityChanges, filterTfEntityChangesForUser, isTfEmbedded } from "@triliumnext/core/src/tf/index.js";
 import type { IncomingMessage } from "http";
 import type { WebSocket } from "ws";
 
@@ -23,17 +23,23 @@ export function tagTfSocket(ws: WebSocket, req: IncomingMessage) {
     }
 }
 
-/** The JSON to send to one socket: `jsonStr` unchanged unless it carries option changes. */
+/**
+ * The JSON to send to one socket: `jsonStr` unchanged unless it carries option or branch changes.
+ * Branch rows get the socket owner's own expansion (`applyTfExpansionToEntityChanges()`).
+ */
 export function tfMessageForSocket(ws: WebSocket, message: WebSocketMessage, jsonStr: string) {
     if (!isTfEmbedded() || message.type !== "frontend-update") {
         return jsonStr;
     }
 
     const { entityChanges } = message.data;
-    if (!entityChanges.some((change) => change.entityName === "options")) {
+    if (!entityChanges.some((change) => change.entityName === "options" || change.entityName === "branches")) {
         return jsonStr;
     }
 
-    const filtered = filterTfEntityChangesForUser(entityChanges, socketUsers.get(ws) ?? null);
-    return JSON.stringify({ ...message, data: { ...message.data, entityChanges: filtered } });
+    const userId = socketUsers.get(ws) ?? null;
+    // Works on a parsed copy: the entities are becca objects, which stay as they are for the next socket.
+    const copy = JSON.parse(jsonStr) as Extract<WebSocketMessage, { type: "frontend-update" }>;
+    const filtered = applyTfExpansionToEntityChanges(filterTfEntityChangesForUser(copy.data.entityChanges, userId), userId);
+    return JSON.stringify({ ...copy, data: { ...copy.data, entityChanges: filtered } });
 }

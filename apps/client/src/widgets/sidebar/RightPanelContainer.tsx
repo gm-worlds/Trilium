@@ -32,6 +32,7 @@ import PdfPages from "./pdf/PdfPages";
 import RightPanelWidget, { CollapsibleWidgets, ExpandWidgetRequest, ExpandWidgetRequests, StackedWidgets, TabHeaderSlot } from "./RightPanelWidget";
 import RightPaneTabs, { RIGHT_PANE_TABS, RightPaneTabDefinition, RightPaneTabId } from "./RightPaneTabs";
 import TableOfContents from "./TableOfContents";
+import { getTfTeamHook, useTfTeamBadges } from "../../tf/team/hooks"; // tf:
 
 const MIN_WIDTH_PERCENT = 5;
 const MAX_WIDTH_PERCENT = 90;
@@ -252,6 +253,7 @@ export function useRightPaneTabs(rightPaneVisible: boolean, widgetsByParent: Wid
     // Subscribe to the AI toggle so the LLM chat is added/removed reactively without a page reload.
     const [ aiEnabled ] = useTriliumOptionBool("aiEnabled");
     const isPdf = noteType === "file" && noteMime === "application/pdf";
+    useTfTeamBadges(); // tf: comment count badge
 
     if (!rightPaneVisible) return [];
     const definitions: RightPanelWidgetDefinition[] = [
@@ -334,6 +336,7 @@ export function useRightPaneTabs(rightPaneVisible: boolean, widgetsByParent: Wid
             position: 1000,
             tab: "chat"
         },
+        ...(getTfTeamHook("rightPaneWidgets")?.(note?.noteId) ?? []).map((widget) => ({ ...widget, enabled: true })), // tf: comments
         ...widgetsByParent.getLegacyWidgets("right-pane").map((widget) => ({
             el: <CustomLegacyWidget key={widget._noteId} originalWidget={widget as LegacyRightPanelWidget} />,
             enabled: true,
@@ -353,7 +356,8 @@ export function useRightPaneTabs(rightPaneVisible: boolean, widgetsByParent: Wid
 
     // A note-less pane (an empty tab) keeps its own empty state rather than an outline with nothing in
     // it: there is no navigating between notes to keep the strip still for.
-    return groupIntoTabs(definitions, !!note);
+    return groupIntoTabs(definitions, !!note)
+        .map((tab) => ({ ...tab, badge: getTfTeamHook("rightPaneTabBadge")?.(tab.id, note?.noteId) ?? undefined })); // tf: comment count
 }
 
 export type TabSelection = "open" | "select" | "dismiss" | "close";

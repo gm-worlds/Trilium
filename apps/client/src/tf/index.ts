@@ -11,10 +11,15 @@ import { installLinkCapture, installShortcutCapture, type TfShortcut } from "./c
 import { applySessionRefresh } from "./gateway.js";
 import { uninstallTfHistory } from "./history.js";
 import { installTfMobile } from "./mobile/index.js";
+import { installTfReach } from "./reach/index.js";
 import { tfCallInterceptor } from "./save_guard.js";
 import { setTfBootstrap, type TfBootstrap } from "./state.js";
+import { releaseTfTeamEditors } from "./team/hooks.js";
+import { installTfTeam, installTfTeamGoto } from "./team/index.js";
 import { applyHostTheme, applyViewport, type TfHostTheme, type TfViewport } from "./theme.js";
 import { addTfTranslations } from "./translations.js";
+import { settleTfWork } from "./work/editor_host.js";
+import { registerTfWorkCapabilities, setTfWorkInit, startTfWork } from "./work/index.js";
 
 export interface TfInitParams {
     user?: unknown;
@@ -54,6 +59,8 @@ export async function startTf() {
     }
     if (!bootstrap?.embed) {
         uninstallTfHistory();
+        releaseTfTeamEditors();
+        settleTfWork(null);
         return;
     }
 
@@ -61,6 +68,9 @@ export async function startTf() {
     setTfCallInterceptor(tfCallInterceptor);
 
     installTfMobile();
+    installTfReach();
+    installTfTeam(bootstrap);
+    registerTfWorkCapabilities();
 
     const bridge = new TfBridge({ notebookId: bootstrap.notebookId, parentOrigins: bootstrap.parentOrigins });
     setTfBridge(bridge);
@@ -68,6 +78,7 @@ export async function startTf() {
 
     bridge.on("init", async (params: TfInitParams) => {
         shortcuts = Array.isArray(params.shortcuts) ? params.shortcuts : [];
+        setTfWorkInit(params);
         if (params.viewport) {
             applyViewport(params.viewport);
         }
@@ -79,10 +90,12 @@ export async function startTf() {
     bridge.on("theme", (params: Partial<TfHostTheme>) => applyHostTheme(params));
     bridge.on("viewport", (params: Partial<TfViewport>) => applyViewport(params));
     bridge.on("goto", (params: { noteId?: string; blockId?: string }) => gotoNote(params));
+    installTfTeamGoto(bridge, gotoNote);
     bridge.on("session.refresh", (params: { token?: string }) => applySessionRefresh(String(params.token ?? "")));
     bridge.on("focus", () => focusEditor());
 
     setTfBootstrap(bootstrap);
+    startTfWork(bootstrap);
 
     const reporter = new TfNoteReporter((note) => bridge.notify("note", note));
     appContext.child(reporter);

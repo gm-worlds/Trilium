@@ -11,6 +11,8 @@ export * from "./guard.js";
 export * from "./save_guard.js";
 export * from "./events.js";
 export * from "./protected.js";
+export * from "./policy.js";
+export * from "./expansion.js";
 
 export function initTfCore(opts: { eventSink?: TfEventSink | null; scriptsOff?: boolean } = {}) {
     enableTfEmbed(true);

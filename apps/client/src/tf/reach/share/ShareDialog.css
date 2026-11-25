@@ -1,0 +1,198 @@
+.modal.tf-share-dialog {
+    .modal-body {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+    }
+
+    .tf-share-note-title {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--muted-text-color);
+        overflow-wrap: anywhere;
+    }
+
+    .tf-share-heading {
+        margin: 0 0 8px;
+        font-size: 0.8125rem;
+        font-weight: 600;
+        color: var(--muted-text-color);
+    }
+
+    .tf-share-empty {
+        padding: 12px 0;
+        color: var(--muted-text-color);
+    }
+
+    .tf-share-links {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        border: 1px solid var(--main-border-color);
+        border-radius: var(--bs-border-radius);
+    }
+
+    .tf-share-link {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        padding: 12px;
+
+        & + .tf-share-link {
+            border-top: 1px solid var(--main-border-color);
+        }
+    }
+
+    .tf-share-link-ends {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-weight: 600;
+    }
+
+    .tf-share-link-facts {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 2px 14px;
+        font-size: 0.875rem;
+        color: var(--muted-text-color);
+    }
+
+    .tf-share-link-actions,
+    .tf-share-row-buttons {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+
+        &.end {
+            justify-content: flex-end;
+        }
+    }
+
+    .tf-share-confirm,
+    .tf-share-inline-form {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        padding: 10px;
+        border-radius: var(--bs-border-radius);
+        background: var(--accented-background-color);
+    }
+
+    .tf-share-new {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+        margin-top: 12px;
+    }
+
+    .tf-share-hint {
+        margin: 0;
+        font-size: 0.875rem;
+        color: var(--muted-text-color);
+    }
+
+    .tf-share-create {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+    }
+
+    .tf-share-field {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        margin: 0;
+    }
+
+    .tf-share-label {
+        font-weight: 600;
+    }
+
+    .tf-share-end-choice {
+        flex-wrap: wrap;
+    }
+
+    .tf-share-date {
+        max-width: 14em;
+    }
+
+    .tf-share-password {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+
+        .tf-share-password-input {
+            flex: 1 1 auto;
+        }
+    }
+
+    .tf-share-error {
+        color: var(--form-error-text-color, var(--main-text-color));
+    }
+
+    .tf-share-created {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+
+        p {
+            margin: 0;
+        }
+    }
+
+    .tf-share-url-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+
+        .tf-share-url {
+            flex: 1 1 16em;
+            font-family: var(--monospace-font-family, monospace);
+            font-size: 0.875rem;
+        }
+    }
+}
+
+:root.tf-touch .modal.tf-share-dialog {
+    .btn,
+    .icon-action,
+    .tf-share-end-choice .btn {
+        min-height: 44px;
+    }
+
+    .icon-action {
+        min-width: 44px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .modal.tf-share-dialog .bx-spin {
+        animation: none;
+    }
+}
+
+@media (max-width: 991px) {
+    body.mobile .modal.tf-share-dialog .modal-dialog {
+        bottom: var(--tf-keyboard-inset, 0px);
+        max-height: min(85vh, calc(100dvh - var(--tf-keyboard-inset, 0px) - var(--safe-area-inset-top, env(safe-area-inset-top, 0px)) - 8px));
+    }
+
+    body.mobile .modal.tf-share-dialog .modal-content:not(:has(.modal-footer)) .modal-body {
+        padding-bottom: max(var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)), 16px);
+    }
+}
+
+@media (max-height: 500px) {
+    .modal.tf-share-dialog .modal-body {
+        gap: 10px;
+    }
+
+    .modal.tf-share-dialog .tf-share-create {
+        gap: 10px;
+    }
+}

@@ -98,3 +98,12 @@
         flex-shrink: 0;
     }
 }
+
+/*
+ * A dialog that is fading out is still laid out over the page for the length of its
+ * transition, and until now it took the click meant for what is under it (press Close, then a
+ * button within half a second: nothing happened). A dialog that is not shown takes no input.
+ */
+:root.tf-embedded .modal:not(.show) {
+    pointer-events: none;
+}

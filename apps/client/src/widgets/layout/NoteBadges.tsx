@@ -27,6 +27,8 @@ import {
 import Icon from "../react/Icon";
 import { ActiveContentBadges } from "./ActiveContentBadges";
 import { SnippetBadge } from "./SnippetBadge";
+import { TfShareMarker } from "../../tf/reach/components.js"; // tf:
+import { useTfHiddenUi } from "../../tf/reach/hooks.js"; // tf:
 
 export default function NoteBadges() {
     return (
@@ -35,6 +37,7 @@ export default function NoteBadges() {
             <ReadOnlyBadge />
             <OfficePreviewBadge />
             <ShareBadge />
+            <TfShareMarker /> {/* tf: "Shared until <date>" for share links that end */}
             <ClippedNoteBadge />
             <ExecuteBadge />
             <SnippetBadge />
@@ -105,8 +108,9 @@ function ShareBadge() {
     const [ , switchShareState ] = useShareState(note);
     const { scope, linkHref } = useShareInfo(note);
     const badge = SHARE_BADGES[scope];
+    const hideTfShare = useTfHiddenUi("shareBadge"); // tf: /share pages are closed inside Taskforce
 
-    return (linkHref &&
+    return (!hideTfShare && linkHref && // tf:
         <BadgeWithDropdown
             icon={badge.icon}
             text={t(badge.text)}

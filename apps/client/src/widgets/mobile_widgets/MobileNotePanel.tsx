@@ -14,6 +14,7 @@ import PdfPages from "../sidebar/pdf/PdfPages";
 import { RightPaneTabBodies, type RightPaneTabContents, useRightPaneTabs } from "../sidebar/RightPanelContainer";
 import { NavigatedInNote } from "../sidebar/RightPanelWidget";
 import { RightPaneTabId } from "../sidebar/RightPaneTabs";
+import { useTfOpenNotePanel } from "../../tf/team/hooks"; // tf:
 
 /**
  * The title-row button that opens the desktop right pane's tabs in a modal, for the mobile layout.
@@ -29,6 +30,7 @@ export default function MobileNotePanel({ widgetsByParent }: { widgetsByParent: 
         setSelectedTabId("attributes");
         setShown(true);
     });
+    useTfOpenNotePanel((ntxId) => !ntxId || noteContext?.ntxId === ntxId, (tabId) => { setSelectedTabId(tabId); setShown(true); }); // tf: comments
 
     return (
         <div className="mobile-note-panel-button">

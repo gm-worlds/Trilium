@@ -114,6 +114,25 @@ describe("tf core", () => {
         }
     });
 
+    it("reports backend scripting off with TF_SCRIPTS=off and the SQL console off whenever embedded", () => {
+        const { backendScriptingEnabled, sqlConsoleEnabled } = config.Security;
+        config.Security.backendScriptingEnabled = true;
+        config.Security.sqlConsoleEnabled = true;
+        try {
+            setTfScriptsOff(true);
+            expect(asUser(alice, () => optionsRoute.getOptions())).toMatchObject({ backendScriptingEnabled: "false", sqlConsoleEnabled: "false" });
+            setTfScriptsOff(false);
+            expect(asUser(alice, () => optionsRoute.getOptions())).toMatchObject({ backendScriptingEnabled: "true", sqlConsoleEnabled: "false" });
+            enableTfEmbed(false);
+            expect(asUser(null, () => optionsRoute.getOptions())).toMatchObject({ backendScriptingEnabled: "true", sqlConsoleEnabled: "true" });
+        } finally {
+            enableTfEmbed(true);
+            setTfScriptsOff(false);
+            config.Security.backendScriptingEnabled = backendScriptingEnabled;
+            config.Security.sqlConsoleEnabled = sqlConsoleEnabled;
+        }
+    });
+
     it("serves the embedding's own options per person, and only while embedded", () => {
         asUser(alice, () => {
             options.setOption("tfTextScale" as never, "1.4");

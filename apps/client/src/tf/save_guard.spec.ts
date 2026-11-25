@@ -24,7 +24,7 @@ vi.mock("./gateway.js", () => ({ renewSession: mocks.renewSession }));
 vi.mock("../widgets/react/Button.js", () => ({ default: () => null }));
 vi.mock("../widgets/react/Modal.js", () => ({ default: () => null }));
 
-import { setConflictAsker, TF_BASE_BLOB_HEADER, tfCallInterceptor } from "./save_guard.js";
+import { getTfClientId, setConflictAsker, TF_BASE_BLOB_HEADER, TF_CLIENT_ID_HEADER, tfCallInterceptor } from "./save_guard.js";
 import { getTfBaseBlob, setTfBaseBlob, type TfCallNext, type TfInterceptedOptions } from "./state.js";
 
 interface Call {
@@ -61,7 +61,8 @@ describe("tf save guard (client)", () => {
     it("sends the base blob and keeps the new one after a save", async () => {
         const { next, calls } = scriptedNext([ { status: 200, body: { blobId: "after" } } ]);
         await tfCallInterceptor("PUT", "notes/n1/data", "c", { data: { content: "x" } }, next);
-        expect(calls[0].headers).toEqual({ [TF_BASE_BLOB_HEADER]: "base" });
+        expect(calls[0].headers).toEqual({ [TF_BASE_BLOB_HEADER]: "base", [TF_CLIENT_ID_HEADER]: getTfClientId() });
+        expect(getTfClientId()).toMatch(/^[0-9a-f]{24}$/);
         expect(getTfBaseBlob("n1")).toBe("after");
 
         const other = scriptedNext([ { status: 200, body: { ok: true } } ]);
@@ -81,6 +82,7 @@ describe("tf save guard (client)", () => {
             .resolves.toEqual({ blobId: "mine" });
         expect(ask).toHaveBeenCalledWith("n1", conflict);
         expect(calls.map((call) => call.headers?.[TF_BASE_BLOB_HEADER])).toEqual([ "base", "*" ]);
+        expect(calls.every((call) => call.headers?.[TF_CLIENT_ID_HEADER] === getTfClientId())).toBe(true);
         expect(getTfBaseBlob("n1")).toBe("mine");
     });
 
@@ -91,6 +93,7 @@ describe("tf save guard (client)", () => {
         await expect(tfCallInterceptor("PUT", "notes/n1/data", "c", { data: { content: "x" } }, next)).resolves.toBeUndefined();
         expect(calls).toHaveLength(1);
         expect(getTfBaseBlob("n1")).toBe("theirs");
+        await new Promise((resolve) => setTimeout(resolve, 0));
         expect(mocks.triggerEvent).toHaveBeenCalledWith("entitiesReloaded", expect.anything());
         expect(mocks.post).not.toHaveBeenCalled();
     });
@@ -104,6 +107,7 @@ describe("tf save guard (client)", () => {
             "notes/root/children?target=after&targetBranchId=b1",
             expect.objectContaining({ type: "text", content: "<p>mine</p>" })
         );
+        await new Promise((resolve) => setTimeout(resolve, 0));
         expect(mocks.triggerEvent).toHaveBeenCalled();
     });
 

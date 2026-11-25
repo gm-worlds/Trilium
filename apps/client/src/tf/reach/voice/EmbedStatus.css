@@ -1,0 +1,34 @@
+.tf-voice-embed-status {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 8px;
+    padding: 6px 10px;
+    border-top: 1px solid var(--main-border-color);
+    color: var(--muted-text-color);
+    font-family: var(--main-font-family);
+    font-size: 0.875rem;
+    line-height: 1.35;
+    user-select: none;
+
+    .tf-voice-embed-message {
+        flex: 1 1 14em;
+        min-width: 0;
+        color: var(--main-text-color);
+    }
+
+    .bx {
+        flex: none;
+    }
+}
+
+:root.tf-touch .tf-voice-embed-status .tf-voice-embed-retry {
+    min-height: 44px;
+    min-width: 44px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .tf-voice-embed-status .bx-spin {
+        animation: none;
+    }
+}

@@ -23,6 +23,7 @@ import entity_constructor from "../../src/becca/entity_constructor.js";
 import becca_loader from "../becca/becca_loader.js";
 import * as binary_utils from "./utils/binary.js";
 import { getCrypto } from "./encryption/crypto.js";
+import { isTfSyncOff } from "../tf/policy.js"; // tf: no sync when embedded
 
 let proxyToggle = true;
 
@@ -613,6 +614,7 @@ interface SyncContext {
 }
 
 async function syncRequest<T extends {}>(syncContext: SyncContext, method: string, requestPath: string, _body?: {}) {
+    if (isTfSyncOff()) throw new Error("Sync is off in an embedded notebook."); // tf: no outbound sync request
     const body = serializeSyncRequestBody(_body);
 
     const timeout = syncOptions.getSyncTimeout();
@@ -868,6 +870,7 @@ function getTotalPullCount() {
 }
 
 function startSyncTimer() {
+    if (isTfSyncOff()) { void becca_loader.beccaLoaded.then(() => getLastSyncedPush()); return; } // tf: no sync loop when embedded
     becca_loader.beccaLoaded.then(() => {
         setInterval(cls.wrap(sync), 60000);
 

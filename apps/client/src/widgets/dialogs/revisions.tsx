@@ -35,6 +35,7 @@ import NoItems from "../react/NoItems";
 import { RawHtmlBlock, SanitizedHtml } from "../react/RawHtml";
 import PdfViewer, { getPdfUrl } from "../type_widgets/file/PdfViewer";
 import { applyReferenceLinks } from "../type_widgets/text/read_only_helper";
+import { getTfTeamHook, TfTeamSlot, useTfTeamVersion } from "../../tf/team/hooks"; // tf:
 
 const DIFFABLE_TYPES = ["text", "code", "mermaid"];
 
@@ -49,6 +50,7 @@ export default function RevisionsDialog() {
     const modalRef = useRef<HTMLDivElement>(null);
     const { isMasterDetail, mobileView, switchMobileView, resetMobileView } = useMobileMasterDetail(modalRef);
     const isMobile = utils.isMobile();
+    useTfTeamVersion(); // tf: the "By" filter
 
     useTriliumEvent("showRevisions", async ({ noteId, ntxId }) => {
         const note = await getNote(noteId, ntxId);
@@ -122,14 +124,15 @@ export default function RevisionsDialog() {
         switchMobileView("page");
     };
 
-    const revisionsList = (
+    const revisionsList = (<>
+        <TfTeamSlot name="revision-filter" noteId={note?.noteId} /> {/* tf: "By" filter */}
         <RevisionsList
-            revisions={revisions ?? []}
+            revisions={getTfTeamHook("filterRevisions")?.(note?.noteId, revisions ?? []) ?? revisions ?? []} // tf:
             onSelect={selectRevision}
             currentRevision={currentRevision}
             detailed={utils.isMobile()}
         />
-    );
+    </>);
 
     const handleRevisionDeleted = () => {
         setRefreshCounter(c => c + 1);
@@ -407,6 +410,7 @@ function RevisionsList({ revisions, onSelect, currentRevision, detailed }: { rev
                                         {item.description}
                                     </div>
                                 )}
+                                <TfTeamSlot name="revision-author" inline noteId={item.noteId} revisionId={item.revisionId} /> {/* tf: who made it */}
                                 {meta && (
                                     <div className="revision-item-meta">
                                         {meta}

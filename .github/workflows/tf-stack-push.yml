@@ -1,0 +1,16 @@
+# Copy of the trigger that lives on tf/stack as .github/workflows/tf-stack-push.yml.
+# GitHub runs a push workflow from the pushed commit, so a push to tf/stack can only start the
+# release pipeline (tf-release.yml on tf/ci) through a file on tf/stack itself.
+name: tf-stack-push
+
+on:
+  push:
+    branches: [tf/stack]
+
+permissions:
+  contents: write
+  issues: write
+
+jobs:
+  release:
+    uses: gm-worlds/Trilium/.github/workflows/tf-release.yml@tf/ci

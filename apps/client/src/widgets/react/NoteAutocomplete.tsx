@@ -26,6 +26,7 @@ import OverlayControlGroup from "./OverlayControlGroup";
 import Popup, { type PopupProps } from "./Popup";
 import RawHtml from "./RawHtml";
 import { renderShortcutKbds } from "./shortcut_kbd";
+import { getTfTeamHook, withTfMentionPeople } from "../../tf/team/hooks"; // tf:
 
 /** Wide enough for a note path a few levels deep to fit on one line. */
 const DROPDOWN_MIN_WIDTH = 500;
@@ -520,11 +521,12 @@ export function NoteMentionList({
     const inputRef = useRef<HTMLInputElement>(null);
     const source = useCallback((term: string) =>
         getNoteSuggestions(term, { allowCreatingNotes, limit: MENTION_NOTE_LIMIT }), [ allowCreatingNotes ]);
+    const sourceWithPeople = useMemo(() => withTfMentionPeople(source), [ source ]); // tf: people first
     const schedule = useMemo(() => createSearchScheduler(), []);
 
     const autocomplete = useAutocomplete({
         query,
-        source,
+        source: sourceWithPeople, // tf:
         onPick: (suggestion: Suggestion) => {
             if (suggestion.action === "create-child-note" && onPickChildNote) {
                 onPickChildNote(suggestion.noteTitle ?? "");
@@ -803,6 +805,7 @@ function NoteSuggestionMenu({ autocomplete, searchingFor, className }: {
                 <FormDropdownDivider />
             </>}
             {searchingFor === undefined && autocomplete.items.map((suggestion, index) => [
+                getTfTeamHook("mentionRowPrefix")?.(autocomplete.items, index), // tf: "People" heading
                 startsGroup(autocomplete.items, index) && <FormDropdownDivider key={`divider-${index}`} />,
                 recentGroups[index] && recentGroups[index] !== recentGroups[index - 1] && (
                     <FormListHeader key={`heading-${index}`} text={recentGroupTitle(recentGroups[index])} />

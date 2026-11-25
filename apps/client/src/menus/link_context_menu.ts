@@ -27,6 +27,7 @@ import rightIcon from "./icons/position-right.svg?raw";
 import wrapLeftIcon from "./icons/position-wrap-left.svg?raw";
 import wrapRightIcon from "./icons/position-wrap-right.svg?raw";
 import { getTextEditorContaining, keepEditorFocused } from "./text_editor_context_menu.js";
+import { tfAttachmentEmbedItems } from "../tf/reach/hooks.js"; // tf:
 
 /**
  * Where a link menu opens, and the element it is opened from. A mouse event is one; a control
@@ -437,7 +438,8 @@ async function getAttachmentItems(
         linked.getLinkedAttachmentActions(attachment, { isReadOnly });
     const toItems = (actions: AttachmentAction[]) => actions.map(toActionItem);
     return [
-        ...separateGroups([ toItems(view), getEmbedItems(embed), toItems(change), toItems(image) ]),
+        ...separateGroups([ toItems(view), getEmbedItems(embed), toItems(change), toItems(image),
+            tfAttachmentEmbedItems<CommandNames>(attachment, embed.editor) ]), // tf: "Make a transcript"
         ...getDeleteAndConvertGroup(embed, deletion, conversion)
     ];
 }
