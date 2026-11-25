@@ -67,6 +67,7 @@
     "packages/trilium-core/src/services/scripting_guard.ts",
     "packages/trilium-core/src/services/sync.ts",
     "packages/trilium-core/src/services/sync_options.ts",
+    "packages/trilium-core/src/services/sync_update.ts",
     "packages/trilium-core/src/share/handlers.ts",
     "pnpm-lock.yaml"
   ]
