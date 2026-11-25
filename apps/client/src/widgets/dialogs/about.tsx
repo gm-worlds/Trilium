@@ -14,6 +14,7 @@ import contributors from "../../../../../contributors.json";
 import { t } from "../../services/i18n.js";
 import server from "../../services/server.js";
 import { isStandalone } from "../../services/utils.js";
+import { TfAboutLine } from "../../tf/components.js"; // tf:
 import { formatDateTime } from "../../utils/formatters.js";
 import DirectoryLink from "../react/DirectoryLink.js";
 import { useTooltip, useTriliumEvent } from "../react/hooks.jsx";
@@ -122,6 +123,7 @@ export default function AboutDialog() {
                             </div>
                         </PropertySheetItem>
                     )}
+                    <TfAboutLine /> {/* tf: names the fork and links to its source (AGPL-3.0, section 13) */}
                 </PropertySheet>
             </div>
 

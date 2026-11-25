@@ -12,6 +12,7 @@ import type { ConstructorData,default as Becca } from "../becca-interface.js";
 import { getSql } from "../../services/sql";
 import { concat2, encodeUtf8, unwrapStringOrBuffer, wrapStringOrBuffer } from "../../services/utils/binary";
 import { hash, hashedBlobId, newEntityId, randomString } from "../../services/utils";
+import { assertTfWritable } from "../../tf/guard.js"; // tf: view role
 
 interface ContentOpts {
     forceSave?: boolean;
@@ -128,6 +129,7 @@ abstract class AbstractBeccaEntity<T extends AbstractBeccaEntity<T>> {
         const primaryKeyName = constructorData.primaryKeyName;
 
         const isNewEntity = !(this as any)[primaryKeyName];
+        assertTfWritable(entityName, (this as any)[primaryKeyName]); // tf: view role
 
         this.beforeSaving(opts);
 
@@ -320,6 +322,7 @@ abstract class AbstractBeccaEntity<T extends AbstractBeccaEntity<T>> {
         const constructorData = this.constructor as unknown as ConstructorData<T>;
         const entityId = (this as any)[constructorData.primaryKeyName];
         const entityName = constructorData.entityName;
+        assertTfWritable(entityName, entityId); // tf: view role
 
         this.utcDateModified = dateUtils.utcNowDateTime();
 
@@ -349,6 +352,7 @@ abstract class AbstractBeccaEntity<T extends AbstractBeccaEntity<T>> {
         const constructorData = this.constructor as unknown as ConstructorData<T>;
         const entityId = (this as any)[constructorData.primaryKeyName];
         const entityName = constructorData.entityName;
+        assertTfWritable(entityName, entityId); // tf: view role
 
         this.utcDateModified = dateUtils.utcNowDateTime();
 

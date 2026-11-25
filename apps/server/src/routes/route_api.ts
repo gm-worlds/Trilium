@@ -16,6 +16,7 @@ import dataDirs from "../services/data_dir.js";
 import sql from "../services/sql.js";
 import { safeExtractMessageAndStackFromError } from "../services/utils.js";
 import { doubleCsrfProtection as csrfMiddleware } from "./csrf_protection.js";
+import { applyTfRequestContext, sendTfError } from "../tf/request_context.js"; // tf:
 
 export const router = express.Router();
 
@@ -96,6 +97,7 @@ function internalRoute<P extends ParamsDictionary>(method: HttpMethod, path: str
                 cls.set("componentId", req.headers["trilium-component-id"]);
                 cls.set("localNowDateTime", req.headers["trilium-local-now-datetime"]);
                 cls.set("hoistedNoteId", req.headers["trilium-hoisted-note-id"] || "root");
+                applyTfRequestContext(req, path); // tf: request identity
 
                 const cb = () => routeHandler(req, res, next);
 
@@ -153,6 +155,7 @@ function handleException(e: unknown | Error, method: HttpMethod, path: string, r
         return;
     }
 
+    if (sendTfError(e, res)) return; // tf: 403 { tfReadOnly: true }
     // Any HttpError states its own code — 400 and 404 as before, plus 403 and 409, which used to be
     // flattened into a 500 that told the client nothing about what to do differently.
     const resStatusCode = e instanceof HttpError ? e.statusCode : 500;

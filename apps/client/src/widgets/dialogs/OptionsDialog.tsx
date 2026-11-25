@@ -8,6 +8,7 @@ import NoteContext from "../../components/note_context";
 import type FNote from "../../entities/fnote";
 import { t } from "../../services/i18n";
 import utils, { isElectron, isStandalone } from "../../services/utils";
+import { isTfHiddenOptionPage } from "../../tf/state"; // tf:
 import NoteDetail from "../NoteDetail";
 import FormList, { FormListItem } from "../react/FormList";
 import HelpButton from "../react/HelpButton";
@@ -204,6 +205,7 @@ export function useOptionPages() {
  * launcher's `desktopOnly` label uses.
  */
 export function isOptionPageVisibleOnPlatform(page: FNote) {
+    if (isTfHiddenOptionPage(page.noteId)) return false; // tf: pages that make no sense inside Taskforce
     if (!isElectron() && page.isLabelTruthy("electronOnly")) {
         return false;
     }

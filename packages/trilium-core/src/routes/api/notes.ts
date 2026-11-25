@@ -16,6 +16,7 @@ import { getSql } from "../../services/sql/index";
 import TaskContext from "../../services/task_context.js";
 import treeService from "../../services/tree.js";
 import { randomString } from "../../services/utils/index";
+import { checkTfSaveGuard, tfSaveResult } from "../../tf/save_guard.js"; // tf: save guard
 
 /**
  * @swagger
@@ -202,8 +203,11 @@ function createNote(req: Request) {
 function updateNoteData(req: Request<{ noteId: string }>) {
     const { content, attachments } = req.body;
     const { noteId } = req.params;
+    const tfConflict = checkTfSaveGuard(req); // tf: save guard
+    if (tfConflict) return tfConflict; // tf: save guard
 
-    return noteService.updateNoteData(noteId, content, attachments);
+    noteService.updateNoteData(noteId, content, attachments);
+    return tfSaveResult(noteId); // tf: save guard
 }
 
 /** The blocks of a text note that the `block` query parameter points at, to edit apart. */

@@ -22,6 +22,7 @@ import { desktopNetworkAccessGate } from "./services/desktop_network_gate.js";
 import { createReactiveOidcMiddleware } from "./services/open_id.js";
 import { setupSecondFactor } from "./services/setup_second_factor.js";
 import { RESOURCE_DIR } from "./services/resource_dir.js";
+import { installTf } from "./tf/index.js"; // tf:
 import utils, { getResourceDir, isDev } from "./services/utils.js";
 
 // Allow serving assets even if the installation path contains a hidden (dot-prefixed) directory.
@@ -29,6 +30,7 @@ const STATIC_OPTIONS: serveStatic.ServeStaticOptions = { dotfiles: "allow" };
 
 export default async function buildApp() {
     const app = express();
+    installTf(app); // tf: gateway key, identity, /api/tf routes (TF_EMBED=1 only)
 
     const publicDir = isDev ? path.join(getResourceDir(), "../dist/public") : path.join(getResourceDir(), "public");
     // The client source dir in dev, where `dist/public` is not rebuilt; the built `public` dir otherwise.

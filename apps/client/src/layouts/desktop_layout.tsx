@@ -2,6 +2,7 @@ import type { AppContext } from "../components/app_context.js";
 import type { WidgetsByParent } from "../services/bundle.js";
 import options from "../services/options.js";
 import utils from "../services/utils.js";
+import { TaskforceButton, TfProtectedNotice } from "../tf/components.js"; // tf:
 import GlobalMenu from "../widgets/buttons/global_menu.jsx";
 import LeftPaneToggle, { LeftPanePeekButton } from "../widgets/buttons/left_pane_toggle.js";
 import RightPaneToggle from "../widgets/buttons/right_pane_toggle.jsx";
@@ -126,6 +127,7 @@ export default class DesktopLayout {
                                                             .child(<NoteIconWidget />)
                                                             .child(<NoteTitleWidget />)
                                                             .child(<NoteBadges />)
+                                                            .child(<TfProtectedNotice />) // tf: protected notes opened by someone else
                                                             .child(<SpacerWidget baseSize={0} growthFactor={1} />)
                                                             .child(<NoteActions />))
                                                         .child(
@@ -167,12 +169,14 @@ export default class DesktopLayout {
             launcherPane = new FlexContainer("row")
                 .css("height", "53px")
                 .class("horizontal")
+                .child(<TaskforceButton isHorizontalLayout={true} />) // tf: back to Taskforce
                 .child(<LauncherContainer isHorizontalLayout={true} />)
                 .child(<GlobalMenu isHorizontalLayout={true} />);
         } else {
             launcherPane = new FlexContainer("column")
                 .css("width", "53px")
                 .class("vertical")
+                .child(<TaskforceButton isHorizontalLayout={false} />) // tf: back to Taskforce
                 .child(<GlobalMenu isHorizontalLayout={false} />)
                 .child(<LauncherContainer isHorizontalLayout={false} />)
                 .child(<LeftPaneToggle isHorizontalLayout={false} />);

@@ -12,6 +12,7 @@ import searchService from "../../services/search/services/search.js";
 import { getSql } from "../../services/sql/index.js";
 import syncOptions from "../../services/sync_options.js";
 import { ValidationError } from "../../errors.js";
+import { getTfUser } from "../../tf/identity.js"; // tf: per-person options
 
 // options allowed to be updated directly in the Options dialog
 const ALLOWED_OPTIONS = new Set<OptionNames>([
@@ -228,7 +229,7 @@ async function updateOption(req: Request<{ name: string; value: string }>) {
         throw new ValidationError("not allowed option to change");
     }
 
-    if (name === "locale") {
+    if (name === "locale" && !getTfUser()) { // tf: a person's locale leaves the server language alone
         await changeLanguage(value);
     }
 }
@@ -248,7 +249,7 @@ async function updateOptions(req: Request) {
         }
     });
 
-    if ("locale" in req.body) {
+    if ("locale" in req.body && !getTfUser()) { // tf: a person's locale leaves the server language alone
         await changeLanguage(req.body["locale"]);
     }
 }

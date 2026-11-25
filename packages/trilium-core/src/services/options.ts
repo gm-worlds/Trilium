@@ -18,12 +18,13 @@ import type { OptionRow } from "@triliumnext/commons";
 import type { FilterOptionsByType, OptionDefinitions, OptionMap, OptionNames } from "@triliumnext/commons";
 import { getDefaultOptionSyncedFlag } from "./options_init.js";
 import { getSql } from "./sql/index.js";
+import { applyTfOptionOverlay, resolveTfOptionRead, resolveTfOptionWrite } from "../tf/options.js"; // tf: per-person options
 
 function getOptionOrNull(name: OptionNames): string | null {
     let option;
 
     if (becca.loaded) {
-        option = becca.getOption(name);
+        option = becca.getOption(resolveTfOptionRead(name)); // tf: per-person options
     } else {
         // e.g. in initial sync becca is not loaded because DB is not initialized
         try {
@@ -80,6 +81,7 @@ function getOptionBool(name: FilterOptionsByType<boolean>): boolean {
 }
 
 function setOption<T extends OptionNames>(name: T, value: string | OptionDefinitions[T]) {
+    name = resolveTfOptionWrite(name); // tf: per-person options
     const option = becca.getOption(name);
 
     if (option) {
@@ -121,7 +123,7 @@ function getOptionMap() {
         map[option.name] = option.value;
     }
 
-    return map as OptionMap;
+    return applyTfOptionOverlay(map) as OptionMap; // tf: per-person options
 }
 
 export default {

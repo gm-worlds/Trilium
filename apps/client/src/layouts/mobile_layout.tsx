@@ -2,6 +2,7 @@ import "./mobile_layout.css";
 
 import type AppContext from "../components/app_context.js";
 import type { WidgetsByParent } from "../services/bundle.js";
+import { TaskforceButton, TfProtectedNotice } from "../tf/components.js"; // tf:
 import GlobalMenuWidget from "../widgets/buttons/global_menu.js";
 import CloseZenModeButton from "../widgets/close_zen_button.js";
 import NoteList from "../widgets/collections/NoteList.jsx";
@@ -77,6 +78,7 @@ export default class MobileLayout {
                                                 .child(<NoteIconWidget />)
                                                 .child(<NoteTitleWidget />)
                                                 .child(<NoteBadges />)
+                                                .child(<TfProtectedNotice />) // tf: protected notes opened by someone else
                                                 .child(<MobileNotePanel widgetsByParent={this.customWidgets} />)
                                                 .child(<MobileDetailMenu />)
                                         )
@@ -104,6 +106,7 @@ export default class MobileLayout {
                     .child(new FlexContainer("row")
                         .class("horizontal")
                         .css("height", "53px")
+                        .child(<TaskforceButton isHorizontalLayout />) // tf: back to Taskforce
                         .child(<LauncherContainer isHorizontalLayout />)
                         .child(<GlobalMenuWidget isHorizontalLayout />)
                         .id("launcher-pane"))

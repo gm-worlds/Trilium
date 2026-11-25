@@ -4,6 +4,7 @@ import type { IncomingMessage, Server as HttpServer } from "http";
 import type express from "express";
 import { WebSocket, WebSocketServer } from "ws";
 
+import { allowTfUpgrade, tagTfSocket, tfMessageForSocket } from "../tf/ws.js"; // tf:
 import config from "./config.js";
 import { randomString } from "./utils.js";
 
@@ -46,6 +47,7 @@ export default class WebSocketMessagingProvider implements HttpAttachableMessagi
     attachToHttpServer(httpServer: HttpServer, sessionParser: express.RequestHandler) {
         this.webSocketServer = new WebSocketServer({
             verifyClient: (info, done) => {
+                if (!allowTfUpgrade(info.req)) return done(false, 403); // tf: gateway key
                 sessionParser(info.req as express.Request, {} as express.Response, () => {
                     const allowed = (info.req as any).session.loggedIn || (config.General && config.General.noAuthentication);
 
@@ -62,6 +64,7 @@ export default class WebSocketMessagingProvider implements HttpAttachableMessagi
         this.webSocketServer.on("connection", (ws, req) => {
             const id = randomString(10);
             (ws as any).id = id;
+            tagTfSocket(ws, req); // tf: who the socket belongs to
             this.clientMap.set(id, ws);
 
             console.log(`websocket client connected`);
@@ -120,7 +123,7 @@ export default class WebSocketMessagingProvider implements HttpAttachableMessagi
 
             this.webSocketServer.clients.forEach((client) => {
                 if (client.readyState === WebSocket.OPEN) {
-                    client.send(jsonStr);
+                    client.send(tfMessageForSocket(client, message, jsonStr)); // tf: per-person options
                 }
             });
         }

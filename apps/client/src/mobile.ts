@@ -2,6 +2,7 @@ import appContext from "./components/app_context.js";
 import bundleService from "./services/bundle.js";
 import { setupClipboardImageEmbed } from "./services/clipboard_image_embed.js";
 import glob from "./services/glob.js";
+import { maybeStartTf } from "./tf/state.js"; // tf:
 import { preloadCommonNoteTypes } from "./widgets/note_types.js";
 
 glob.setupGlobs();
@@ -18,4 +19,4 @@ const MobileLayout = (await import("./layouts/mobile_layout.js")).default;
 appContext.setLayout(new MobileLayout(widgetBundles));
 
 /** Resolves once the layout is rendered and froca has the note tree; see desktop.ts. */
-export const ready = appContext.start().then(preloadCommonNoteTypes);
+export const ready = appContext.start().then(preloadCommonNoteTypes).then(maybeStartTf); // tf: Taskforce embedding, only inside a frame

@@ -1,0 +1,24 @@
+.modal.tf-conflict-dialog {
+    .tf-conflict-message {
+        font-weight: 600;
+        margin-bottom: 8px;
+    }
+
+    .tf-conflict-hint {
+        color: var(--muted-text-color);
+        margin-bottom: 12px;
+    }
+
+    .tf-conflict-options {
+        margin: 0;
+        padding-inline-start: 20px;
+
+        li + li {
+            margin-top: 4px;
+        }
+    }
+
+    .modal-footer {
+        gap: 8px;
+    }
+}

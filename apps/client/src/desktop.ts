@@ -12,6 +12,7 @@ import noteTooltipService from "./services/note_tooltip.js";
 import { onEffectiveThemeStyleChange, setBackgroundEffectsSuspended } from "./services/theme.js";
 import toastService from "./services/toast.js";
 import utils from "./services/utils.js";
+import { maybeStartTf } from "./tf/state.js"; // tf:
 import { preloadCommonNoteTypes } from "./widgets/note_types.js";
 
 await appContext.earlyInit();
@@ -41,6 +42,7 @@ export const ready = bundleService.getWidgetBundlesByParent().then(async (widget
 
     reportFullRenderStartupMetric();
     preloadCommonNoteTypes();
+    maybeStartTf(); // tf: Taskforce embedding, only inside a frame
 });
 
 glob.setupGlobs();

@@ -9,6 +9,7 @@ import * as cls from "./context.js";
 import events from "./events.js";
 import blobService from "./blob.js";
 import getInstanceId from "./instance_id.js";
+import { assertTfWritable } from "../tf/guard.js"; // tf: view role
 
 let maxEntityChangeId = 0;
 
@@ -48,6 +49,7 @@ function requeueEntityChange(origEntityChange: EntityChange) {
 }
 
 function putEntityChange(origEntityChange: EntityChange) {
+    assertTfWritable(origEntityChange.entityName, origEntityChange.entityId); // tf: view role
     const ec = { ...origEntityChange };
 
     delete ec.id;

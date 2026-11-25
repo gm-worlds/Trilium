@@ -1,5 +1,6 @@
 import type { StandaloneApi } from "@triliumnext/commons";
 
+import type { TfCallInterceptor, TfCallOptions } from "../tf/state.js"; // tf:
 import { t } from "./i18n.js";
 import { getSetupAuthToken } from "./setup_auth.js";
 import utils, { isShare } from "./utils.js";
@@ -290,7 +291,13 @@ interface CallOptions {
      * everywhere else, so an ordinary request that hangs still fails rather than hanging its caller.
      */
     timeoutMs?: number;
+    /** Set by the Taskforce embedding (`tf/save_guard.ts`) for the calls it makes itself. */
+    tf?: TfCallOptions; // tf:
 }
+
+// tf: the Taskforce embedding routes calls through `tf/save_guard.ts` once it has started.
+let tfCallInterceptor: TfCallInterceptor | null = null;
+export function setTfCallInterceptor(interceptor: TfCallInterceptor | null) { tfCallInterceptor = interceptor; } // tf:
 
 /**
  * Long enough for any request the UI makes while someone waits on it. Operations measured in
@@ -308,9 +315,11 @@ const DEFAULT_TIMEOUT = 60000;
  */
 const USE_LOCAL_FETCH = import.meta.env.VITE_DISABLE_LOCAL_FETCH !== "true";
 
-async function call<T>(method: string, url: string, componentId?: string, options: CallOptions = {}) {
+async function call<T>(method: string, url: string, componentId?: string, options: CallOptions = {}): Promise<T> { // tf: return type, `call` is passed to the interceptor
+    if (tfCallInterceptor && !options.tf) return await tfCallInterceptor(method, url, componentId, options, call) as T; // tf: save guard, session refresh
     const headers = await getHeaders({
-        "trilium-component-id": componentId
+        "trilium-component-id": componentId,
+        ...options.tf?.headers // tf: x-tf-base-blob
     });
     const { data } = options;
 
@@ -377,7 +386,7 @@ function ajax(url: string, method: string, data: unknown, headers: Headers, opts
                     try {
                         await refreshCsrfToken();
                         // Rebuild headers so the fresh glob.csrfToken is picked up
-                        const retryHeaders = await getHeaders({ "trilium-component-id": headers["trilium-component-id"] });
+                        const retryHeaders = await getHeaders({ "trilium-component-id": headers["trilium-component-id"], ...opts.tf?.headers }); // tf: keeps x-tf-base-blob
                         const retryResult = await ajax(url, method, data, retryHeaders, { ...opts, csrfRetried: true });
                         res(retryResult);
                         return;
@@ -394,6 +403,8 @@ function ajax(url: string, method: string, data: unknown, headers: Headers, opts
                 } else if (opts.silentUnauthorized && jqXhr.status === 401) {
                     // report nothing
                 } else if (opts.silentBadRequest && jqXhr.status === 400) {
+                    // report nothing
+                } else if (opts.tf?.silence?.(jqXhr.status, jqXhr.responseText)) { // tf: the embedding reports these itself
                     // report nothing
                 } else {
                     try {

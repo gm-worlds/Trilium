@@ -41,6 +41,7 @@ import ws from "../../services/ws";
 import BasicWidget, { ReactWrappedWidget } from "../basic_widget";
 import NoteContextAwareWidget from "../note_context_aware_widget";
 import { createHoldContextMenu } from "../widget_utils";
+import { setTfBaseBlob } from "../../tf/state"; // tf: save guard
 import { noteSavedDataStore } from "./NoteStore";
 import { findClosestNoteContext, NoteContextContext, ParentComponent, refToJQuerySelector } from "./react_utils";
 import type FAttachment from "../../entities/fattachment";
@@ -217,6 +218,7 @@ export function useEditorSpacedUpdate({
             noteSavedDataStore.set(note.noteId, blob.content);
         }
         spacedUpdate.allowUpdateWithoutChange(() => onContentChange(blob.content));
+        if (block === undefined) setTfBaseBlob(note.noteId, (blob as { blobId?: string }).blobId); // tf: save guard
         loadedNoteIdRef.current = note.noteId;
     }, [ blob ]);
 

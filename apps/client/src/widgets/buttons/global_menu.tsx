@@ -12,6 +12,7 @@ import {
 } from "../../services/color_scheme";
 import { t } from "../../services/i18n";
 import utils, { isElectron, isMobile, isStandalone } from "../../services/utils";
+import { isTfHiddenCommand } from "../../tf/state"; // tf:
 import Dropdown from "../react/Dropdown";
 import { FormDropdownDivider, FormDropdownSubmenu, FormListHeader, FormListItem } from "../react/FormList";
 import {
@@ -201,6 +202,7 @@ function SwitchToOptions() {
 
 function MenuItem({ icon, text, title, command, disabled, active, keyboardShortcut }: MenuItemProps<KeyboardActionNames | CommandNames | (() => void)>) {
     const parentComponent = useContext(ParentComponent);
+    if (isTfHiddenCommand(command)) return null; // tf: entries that make no sense inside Taskforce
     return <FormListItem
         icon={icon}
         title={title}

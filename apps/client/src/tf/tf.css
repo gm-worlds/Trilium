@@ -1,0 +1,63 @@
+:root.tf-embedded.tf-host-accent {
+    --link-color: var(--tf-accent-solid);
+    --link-hover-color: var(--tf-accent-solid);
+    --ck-editor-widget-selection-color: var(--tf-accent-solid);
+    --input-focus-outline-color: color-mix(in srgb, var(--tf-accent) 60%, transparent);
+    --selection-background-color: color-mix(in srgb, var(--tf-accent) 30%, transparent);
+    --link-selection-outline-color: color-mix(in srgb, var(--tf-accent) 55%, transparent);
+}
+
+:root.tf-embedded {
+    --bs-border-radius: var(--tf-radius, 8px);
+    --dropdown-border-radius: var(--tf-radius, 8px);
+    --center-pane-border-radius: calc(var(--tf-radius, 8px) + 2px);
+    --overlay-button-border-radius: max(4px, calc(var(--tf-radius, 8px) - 2px));
+    --tooltip-border-radius: max(4px, calc(var(--tf-radius, 8px) - 2px));
+}
+
+/* The detail font keeps the Next theme's content face; this value matches `theme-next/base.css`. */
+:root.tf-embedded.tf-host-font {
+    --main-font-family: var(--tf-font-sans);
+    --tree-font-family: var(--tf-font-sans);
+    --detail-font-family: "Inter", sans-serif;
+}
+
+:root.tf-embedded.tf-host-accent button.btn.btn-primary {
+    background: var(--tf-accent-solid);
+    color: var(--tf-on-accent, white);
+}
+
+#launcher-pane .tf-taskforce-button.tf-taskforce-mark::before {
+    content: "";
+    display: inline-block;
+    vertical-align: middle;
+    width: 1.25em;
+    height: 1.25em;
+    background-color: currentColor;
+    mask: var(--tf-taskforce-mark) center / contain no-repeat;
+    -webkit-mask: var(--tf-taskforce-mark) center / contain no-repeat;
+}
+
+:root {
+    --tf-taskforce-mark: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3.5' y='3.5' width='17' height='17' rx='4.5'/%3E%3Cpath d='M8 8.5h8M12 8.5V16.5'/%3E%3C/svg%3E");
+}
+
+.tf-protected-notice {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+    margin-inline-start: 8px;
+    padding: 2px 8px;
+    border-radius: var(--tf-radius, 6px);
+    border: 1px solid var(--main-border-color);
+    color: var(--muted-text-color);
+    font-size: 0.85em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+
+    .bx {
+        flex-shrink: 0;
+    }
+}
