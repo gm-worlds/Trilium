@@ -83,4 +83,25 @@ describe("tf route policy", () => {
             }
         }
     });
+    it("opens exactly the sync protocol on the sync channel, and only for an editor", () => {
+        const sync = [
+            "/api/login/sync", "/api/sync/check", "/api/sync/changed?instanceId=a&lastEntityChangeId=0",
+            "/api/sync/update?logMarkerId=x", "/api/sync/finished", "/api/sync/check-entity-changes",
+            "/api/sync/queue-sector/notes/a1", "/API/Sync/Changed/"
+        ];
+        for (const url of sync) {
+            expect({ url, decision: decideTfRoute(url, "edit", "sync") }).toEqual({ url, decision: "allow" });
+            expect({ url, decision: decideTfRoute(url, "view", "sync") }).toEqual({ url, decision: "refuse" });
+            expect({ url, decision: decideTfRoute(url, null, "sync") }).toEqual({ url, decision: "refuse" });
+            expect({ url, decision: decideTfRoute(url, "edit") }).toEqual({ url, decision: "refuse" });
+        }
+        for (const url of [
+            "/", "/api/notes/root", "/api/options", "/api/sync/now", "/api/sync/force-full-sync",
+            "/api/sync/fill-entity-changes", "/api/sync/stats", "/api/setup/sync-seed", "/api/setup/status",
+            "/api/sync/queue-sector/notes", "/api/sync/queue-sector/notes/a/b", "/api/sync//changed",
+            "/api/login/protected", "/etapi/notes/root", "/api/sql/execute/x"
+        ]) {
+            expect({ url, decision: decideTfRoute(url, "edit", "sync") }).toEqual({ url, decision: "refuse" });
+        }
+    });
 });
