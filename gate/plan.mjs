@@ -103,7 +103,7 @@ if (WATCH || WATCH_TAG) {
     }
     if (!tag) {
         notes.push("upstream has no stable release");
-    } else if (compareVersions(tag, `v${base}`) <= 0) {
+    } else if (compareVersions(tag, `v${base}`) <= 0 && !WATCH_TAG) {
         notes.push(`upstream's newest stable tag ${tag} is not newer than the stack's v${base}`);
     } else {
         const upstream = tag.replace(/^v/, "");
