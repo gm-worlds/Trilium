@@ -6,6 +6,7 @@ import FNote from "../../entities/fnote";
 import { isExperimentalFeatureEnabled } from "../../services/experimental_features";
 import froca from "../../services/froca";
 import { isDesktop, isElectron, isMobile } from "../../services/utils";
+import { isTfScriptsOff } from "../../tf/state.js"; // tf:
 import TabSwitcher, { useLaunchBarTabSwipe } from "../mobile_widgets/TabSwitcher";
 import { useNoteLabelBoolean, useTriliumEvent } from "../react/hooks";
 import { onWheelHorizontalScroll } from "../widget_utils";
@@ -78,7 +79,7 @@ function Launcher({ note, isHorizontalLayout }: { note: FNote, isHorizontalLayou
     }
 
     const launcherType = note.getLabelValue("launcherType");
-    if (glob.TRILIUM_SAFE_MODE && launcherType === "customWidget") return;
+    if ((glob.TRILIUM_SAFE_MODE || isTfScriptsOff()) && launcherType === "customWidget") return; // tf: scripts off
 
     switch (launcherType) {
         case "command":

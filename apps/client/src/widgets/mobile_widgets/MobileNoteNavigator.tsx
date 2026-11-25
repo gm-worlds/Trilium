@@ -19,6 +19,7 @@ import { onSystemBack, type SystemBackHandler } from "../../services/system_back
 import tree from "../../services/tree";
 import utils, { isIOS } from "../../services/utils";
 import { NoteContent } from "../collections/legacy/ListOrGridView";
+import { TfNavigatorRowTools } from "../../tf/mobile/navigator_row_tools"; // tf:
 import { useShareState } from "../layout/NoteBadges";
 import {
     useActiveNoteContext,
@@ -701,6 +702,7 @@ function NavigatorRow({ note, parentNoteId, childNotePath, isActive, isPending, 
                 className={clsx("mobile-navigator-row-icon", note.isProtected && "is-protected")}
             />
             <TitleWithIndicators note={note} parentNoteId={parentNoteId} title={title} className="mobile-navigator-row-title" />
+            <TfNavigatorRowTools noteId={note.noteId} parentNoteId={parentNoteId} notePath={childNotePath} /> {/* tf: touch drag + more button */}
             {showHiddenBadge && (
                 <span
                     className="mobile-navigator-row-hidden-badge"

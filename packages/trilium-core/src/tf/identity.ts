@@ -29,6 +29,21 @@ export function enableTfEmbed(on = true) {
     embedded = on;
 }
 
+let scriptsOff = false;
+
+/**
+ * Turns notebook scripts off (`TF_SCRIPTS=off`, the default when embedded): no frontend startup
+ * scripts, widgets, render-note scripts, custom request handlers or backend scripts. Unlike
+ * `TRILIUM_SAFE_MODE`, open tabs are kept.
+ */
+export function setTfScriptsOff(off: boolean) {
+    scriptsOff = off;
+}
+
+export function isTfScriptsOff() {
+    return embedded && scriptsOff;
+}
+
 export function isTfEmbedded() {
     return embedded;
 }

@@ -1,0 +1,30 @@
+.mobile-navigator-row .tf-row-tools {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+    margin-inline-start: auto;
+    order: 10;
+
+    .tf-row-more {
+        width: 44px;
+        height: 44px;
+        margin-block: -6px;
+        margin-inline-end: -10px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--muted-text-color);
+        font-size: 1.2em;
+        border-radius: var(--tf-radius, 8px);
+        transition: background-color var(--tf-motion-fast) var(--tf-ease-out), scale var(--tf-motion-fast) var(--tf-ease-out);
+
+        &:active {
+            background-color: var(--hover-item-background-color);
+            scale: 0.94;
+        }
+    }
+}
+
+.mobile-navigator-row:has(.tf-row-tools) .mobile-navigator-row-chevron {
+    order: 11;
+}

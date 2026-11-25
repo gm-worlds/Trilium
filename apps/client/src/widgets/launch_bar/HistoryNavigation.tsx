@@ -5,6 +5,7 @@ import contextMenu, { MenuCommandItem } from "../../menus/context_menu";
 import { notePathMenuItem } from "../../menus/context_menu_utils";
 import { showLauncherContextMenu } from "../../menus/launcher_button_context_menu";
 import link from "../../services/link";
+import { getTfHistoryEntries } from "../../tf/history"; // tf:
 import { useHoldContextMenu } from "../react/hooks";
 import { LaunchBarActionButton, useLauncherIconAndTitle } from "./launch_bar_widgets";
 
@@ -88,6 +89,7 @@ export async function getHistoryItems(
  * desktop app, and from the Navigation API in a browser.
  */
 function getReachableEntries(direction: HistoryDirection): HistoryEntry[] {
+    const tfEntries = getTfHistoryEntries(direction); if (tfEntries) return tfEntries; // tf: the frame's own history list
     const electronNavigation = window.electronApi?.navigation;
     if (electronNavigation) {
         const entries = electronNavigation.navigationGetAllEntries().map(({ url }, index) => ({

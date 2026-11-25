@@ -20,22 +20,31 @@ export function useTfBootstrap() {
     return useSyncExternalStore(subscribeTf, getTfBootstrap);
 }
 
-/** Hands the person back to Taskforce's tab and project switcher. */
+/**
+ * Hands the person back to Taskforce's tab and project switcher.
+ *
+ * The layouts mount it through `ReactWrappedWidget`, which places only what the first render
+ * produced, and the bootstrap arrives after that render. The `tf-slot` element is therefore always
+ * rendered (`display: contents`) and the button appears inside it later.
+ */
 export function TaskforceButton({ isHorizontalLayout }: { isHorizontalLayout: boolean }) {
     const bootstrap = useTfBootstrap();
-    if (!bootstrap) {
-        return null;
-    }
 
     return (
-        <LaunchBarContext.Provider value={{ isHorizontalLayout }}>
-            <LaunchBarActionButton
-                className="tf-taskforce-button"
-                icon="tf-taskforce-mark"
-                text={t("tf.back_to_taskforce")}
-                onClick={() => getTfBridge()?.notify("switcher.open", {})}
-            />
-        </LaunchBarContext.Provider>
+        <div className="tf-slot tf-taskforce-slot">
+            {bootstrap && (
+                <LaunchBarContext.Provider value={{ isHorizontalLayout }}>
+                    <LaunchBarActionButton
+                        className="tf-taskforce-button"
+                        data-tf-taskforce="true"
+                        aria-label={t("tf.taskforce")}
+                        icon="tf-taskforce-mark"
+                        text={t("tf.back_to_taskforce")}
+                        onClick={() => getTfBridge()?.notify("switcher.open", {})}
+                    />
+                </LaunchBarContext.Provider>
+            )}
+        </div>
     );
 }
 
@@ -76,15 +85,16 @@ export function TfProtectedNotice() {
         };
     }, [ bootstrap ]);
 
-    if (!bootstrap || !state?.unlocked || state.by?.id === bootstrap.user?.id) {
-        return null;
-    }
-
-    const text = state.by ? t("tf.protected_open_by", { name: state.by.name }) : t("tf.protected_open");
+    const shown = !!bootstrap && !!state?.unlocked && state.by?.id !== bootstrap.user?.id;
+    const text = state?.by ? t("tf.protected_open_by", { name: state.by.name }) : t("tf.protected_open");
     return (
-        <div className="tf-protected-notice" role="status" title={text}>
-            <span className="bx bx-lock-open-alt" aria-hidden="true" />
-            <span>{text}</span>
+        <div className="tf-slot">
+            {shown && (
+                <div className="tf-protected-notice" role="status" title={text}>
+                    <span className="bx bx-lock-open-alt" aria-hidden="true" />
+                    <span>{text}</span>
+                </div>
+            )}
         </div>
     );
 }

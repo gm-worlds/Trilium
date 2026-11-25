@@ -6,6 +6,7 @@ import { TransformComponent, TransformWrapper } from "react-zoom-pan-pinch";
 import { t } from "../../services/i18n";
 import type { ShortcutHintDefinition } from "../../services/shortcut_hints";
 import { isMobile } from "../../services/utils";
+import { isTfTouch } from "../../tf/state"; // tf:
 import ShortcutHintButton from "../shortcut_hints/shortcut_hint_button";
 import {
     isInScrollingDocument, type MediaEnvironment, usesCompactControls
@@ -158,7 +159,7 @@ export default function ImageViewer({
                 wheel={zoom.wheel}
                 panning={{ disabled: isInDocument && !pannable }}
                 autoAlignment={{ disabled: true }}
-                doubleClick={{ mode: "reset" }}
+                doubleClick={isTfTouch() ? { mode: "toggle", step: 1.5 } : { mode: "reset" }} // tf: a double tap zooms on touch
                 onTransform={zoom.onTransform}
                 onPanningStart={() => setPanning(true)}
                 onPanningStop={() => setPanning(false)}

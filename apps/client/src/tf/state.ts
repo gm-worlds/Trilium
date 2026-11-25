@@ -3,6 +3,7 @@
  * about it. Kept free of heavy imports: layouts, menus and dialogs import it statically, and the
  * rest of `tf/` loads only once `startTf()` knows the page is embedded.
  */
+import { installTfHistory } from "./history.js";
 
 export interface TfBootstrap {
     embed: true;
@@ -25,6 +26,11 @@ export function getTfBootstrap() {
 
 export function isTfEmbedded() {
     return bootstrap !== null;
+}
+
+/** Whether the embedded notebook is used with a finger (`tf/mobile`, class `tf-touch`). */
+export function isTfTouch() {
+    return bootstrap !== null && document.documentElement.classList.contains("tf-touch");
 }
 
 export function setTfBootstrap(value: TfBootstrap | null) {
@@ -81,7 +87,7 @@ export function isTfHiddenCommand(command: unknown) {
 const baseBlobs = new Map<string, string>();
 
 /**
- * The blob a note's editor started from, sent as `x-tf-base-blob` with its next save. Set when an
+ * The blob a note's editor started from, sent as `tf-base-blob` with its next save. Set when an
  * editor loads content (`useEditorSpacedUpdate()`) and after each own save.
  */
 export function setTfBaseBlob(noteId: string, blobId: string | undefined | null) {
@@ -105,6 +111,11 @@ export function maybeStartTf() {
     void import("./index.js").then((tf) => tf.startTf());
 }
 
+// Before `appContext.start()` restores the tabs, so the first navigations add no host history either.
+if (typeof window !== "undefined" && window.parent !== window) {
+    installTfHistory();
+}
+
 /** What the embedding adds to one call of `services/server.ts`. */
 export interface TfCallOptions {
     headers?: Record<string, string>;
@@ -123,3 +134,24 @@ export type TfCallNext = (method: string, url: string, componentId: string | und
 export type TfCallInterceptor = (
     method: string, url: string, componentId: string | undefined, options: TfInterceptedOptions, next: TfCallNext
 ) => Promise<unknown>;
+
+const mindMaps = new WeakMap<Element, unknown>();
+
+/** Records the Mind Elixir instance drawn in `container`, for the touch gestures of `tf/mobile`. */
+export function registerTfMindMap(container: Element | null, instance: unknown) {
+    if (container && isTfEmbedded()) {
+        mindMaps.set(container, instance);
+    }
+}
+
+export function getTfMindMap(container: Element) {
+    return mindMaps.get(container) ?? null;
+}
+
+/**
+ * Whether the engine runs with notebook scripts off (`TF_SCRIPTS=off`), read from the page
+ * bootstrap so the client asks for no startup scripts, widgets or render-note scripts at all.
+ */
+export function isTfScriptsOff() {
+    return !!(window.glob as { tfScriptsOff?: boolean } | undefined)?.tfScriptsOff;
+}

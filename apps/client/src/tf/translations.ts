@@ -7,6 +7,7 @@ import i18next from "i18next";
 
 export const TF_STRINGS_EN = {
     back_to_taskforce: "Back to Taskforce (tabs and projects)",
+    taskforce: "Taskforce",
     fork_label: "Taskforce build",
     fork_text: "NoteForce, the Taskforce fork of Trilium Notes",
     protected_open_by: "Protected notes are open for everyone in this notebook (unlocked by {{name}})",
@@ -23,7 +24,15 @@ export const TF_STRINGS_EN = {
     conflict_use_theirs_hint: "Drops your changes and shows their version.",
     conflict_use_mine: "Use mine",
     conflict_use_mine_hint: "Saves your text. Their version stays in the note's revisions.",
-    conflict_your_version: "{{title}} (your version)"
+    conflict_your_version: "{{title}} (your version)",
+    row_more: "More actions",
+    moved_note: "Moved \u201c{{title}}\u201d",
+    undo: "Undo",
+    text_size: "Text size",
+    text_smaller: "Smaller text",
+    text_larger: "Larger text",
+    text_reset: "Reset to 100 %",
+    block_handle: "Drag to move this block"
 };
 
 let added = false;

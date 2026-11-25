@@ -14,6 +14,11 @@ export function isTfEmbedEnv(env: NodeJS.ProcessEnv = process.env) {
     return env.TF_EMBED === "1" || env.TF_EMBED === "true";
 }
 
+/** Notebook scripts run only with `TF_SCRIPTS=on`; embedded engines default to off. */
+export function isTfScriptsOff(env: NodeJS.ProcessEnv = process.env) {
+    return isTfEmbedEnv(env) && env.TF_SCRIPTS !== "on";
+}
+
 export function getTfGatewayKey() {
     return process.env.TF_GATEWAY_KEY ?? "";
 }

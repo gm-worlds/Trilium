@@ -11,6 +11,7 @@ import syncService from "../../services/sync.js";
 import { assertScriptingEnabled } from "../../services/scripting_guard.js";
 import { getSql } from "../../services/sql/index.js";
 import { safeExtractMessageAndStackFromError } from "../../services/utils/index.js";
+import { isTfScriptsOff } from "../../tf/identity.js"; // tf: scripts off
 
 interface ScriptBody {
     script: string;
@@ -85,7 +86,7 @@ function getBundlesWithLabel(label: string, value?: string) {
 }
 
 function getStartupBundles(req: Request) {
-    if (!getPlatform().getEnv("TRILIUM_SAFE_MODE")) {
+    if (!getPlatform().getEnv("TRILIUM_SAFE_MODE") && !isTfScriptsOff()) { // tf: scripts off
         if (req.query.mobile === "true") {
             return getBundlesWithLabel("run", "mobileStartup");
         }
@@ -96,13 +97,14 @@ function getStartupBundles(req: Request) {
 }
 
 function getWidgetBundles() {
-    if (!getPlatform().getEnv("TRILIUM_SAFE_MODE")) {
+    if (!getPlatform().getEnv("TRILIUM_SAFE_MODE") && !isTfScriptsOff()) { // tf: scripts off
         return getBundlesWithLabel("widget");
     }
     return [];
 }
 
 function getRelationBundles(req: Request<{ noteId: string, relationName: string }>) {
+    if (isTfScriptsOff()) return []; // tf: scripts off
     const noteId = req.params.noteId;
     const note = becca.getNoteOrThrow(noteId);
     const relationName = req.params.relationName;
@@ -132,6 +134,7 @@ function getRelationBundles(req: Request<{ noteId: string, relationName: string 
 }
 
 function getBundle(req: Request<{ noteId: string }>) {
+    if (isTfScriptsOff()) return null; // tf: scripts off
     const note = becca.getNoteOrThrow(req.params.noteId);
     const { script, params } = req.body ?? {};
 

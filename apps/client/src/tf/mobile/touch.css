@@ -1,0 +1,311 @@
+/*
+ * Touch layer of the Taskforce embedding. Everything here is scoped to `:root.tf-embedded.tf-touch`,
+ * which `tf/mobile/index.ts` sets on a coarse primary pointer or when the host reports one.
+ */
+
+:root.tf-embedded {
+    --tf-hit: 44px;
+    --tf-motion-fast: 160ms;
+    --tf-motion-base: 240ms;
+    --tf-ease-out: cubic-bezier(0.2, 0.9, 0.3, 1);
+    --tf-ease-sheet: cubic-bezier(0.16, 1, 0.3, 1);
+    --tf-text-scale: 1;
+}
+
+:root.tf-embedded.tf-touch {
+    -webkit-tap-highlight-color: transparent;
+
+    &,
+    body {
+        overscroll-behavior: none;
+        touch-action: manipulation;
+    }
+
+    /* Each scroller keeps its overscroll to itself, so the host page never bounces or refreshes. */
+    .scrolling-container,
+    .mobile-navigator-scroll,
+    .note-detail-printable,
+    .modal,
+    .dropdown-menu,
+    .fancytree-container,
+    .tree-wrapper {
+        overscroll-behavior: contain;
+    }
+
+    /* The frame cannot be pinch-zoomed; the content handles pinches itself (`text_size.ts`). */
+    .note-detail-printable,
+    .note-detail-code,
+    .scrolling-container {
+        touch-action: pan-x pan-y;
+    }
+
+    /* Hit areas grown past the visual: the pseudo-element covers 44 x 44 around the control. */
+    :is(
+        .note-icon,
+        .search-button,
+        .icon-action,
+        .collection-filter-submit,
+        .btn-close,
+        .custom-title-bar-button,
+        .collapsible-title,
+        .tab-card .tn-link
+    ):not(.tf-no-hit) {
+        position: relative;
+
+        &::after {
+            content: "";
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            width: max(100%, var(--tf-hit));
+            height: max(100%, var(--tf-hit));
+            transform: translate(-50%, -50%);
+        }
+    }
+
+    /* `.dropdown-toggle` draws its caret with `::after`, so its hit area uses `::before`. */
+    .btn.select-button {
+        position: relative;
+
+        &::before {
+            content: "";
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            width: max(100%, var(--tf-hit));
+            height: max(100%, var(--tf-hit));
+            transform: translate(-50%, -50%);
+        }
+    }
+
+    /* Controls that read better a little larger on a phone. */
+    #launcher-pane :is(.launcher-button, .global-menu-button, .right-dropdown-button) {
+        min-width: var(--tf-hit);
+        min-height: var(--tf-hit);
+    }
+
+    /*
+     * 44 px buttons 8 px apart in 52 px slots, two less than the Next theme's 54, so the launchers
+     * still fit beside the Taskforce button and `useLaunchBarTabSwipe()` keeps the tab swipe on.
+     */
+    #launcher-pane.horizontal {
+        --launcher-pane-button-margin: 0px;
+        --launcher-pane-button-gap: 0px;
+
+        :is(.launcher-button, .right-dropdown-widget, .global-menu) {
+            width: var(--tf-hit) !important;
+            margin-inline: 4px;
+        }
+    }
+
+    .mobile-navigator-current-action {
+        min-width: var(--tf-hit);
+        min-height: var(--tf-hit);
+    }
+
+    .mobile-navigator-toolbar-button {
+        min-height: var(--tf-hit);
+    }
+
+    :is(.tn-overlay-icon-button, .tn-overlay-text-button, .tn-tool-button) {
+        min-width: var(--tf-hit);
+        min-height: var(--tf-hit);
+    }
+
+    .mobile-editor-toolbar .ck.ck-button,
+    .classic-toolbar-island .ck.ck-button {
+        min-height: var(--tf-hit);
+    }
+
+    .btn:not(.icon-action, .note-icon, .search-button, .launcher-button, .btn-close, .tn-tool-button, .select-button) {
+        min-height: var(--tf-hit);
+    }
+
+    .board-view-container :is(.board-note, .board-new-item) {
+        min-height: var(--tf-hit);
+    }
+
+    label:has(> input[type="checkbox"]),
+    .form-check-label {
+        min-height: var(--tf-hit);
+        display: inline-flex;
+        align-items: center;
+    }
+
+    .note-title-widget .note-title,
+    input.note-title {
+        min-height: var(--tf-hit);
+    }
+
+    /* iOS zooms into a field whose text is under 16 px when it takes the focus. */
+    input:not([type="checkbox"], [type="radio"], [type="range"], [type="color"]),
+    textarea,
+    select {
+        font-size: max(16px, 1em);
+    }
+
+    .promoted-attribute-input,
+    .form-control {
+        min-height: var(--tf-hit);
+    }
+
+    .excalidraw.excalidraw {
+        --default-button-size: 2.75rem;
+        --lg-button-size: 2.75rem;
+    }
+
+    /* Controls the desktop shows on hover stay visible on touch. */
+    .fancytree-node:is(.fancytree-active, .fancytree-focused) :is(.tn-icon.tree-item-button, .add-note-button) {
+        display: inline-block;
+    }
+
+    .board-view-container .board-note .edit-icon {
+        opacity: 0.7;
+    }
+
+    .relation-map-wrapper .endpoint {
+        opacity: 1;
+    }
+
+    /* No hover look lingers on the control a finger last tapped. */
+    @media (hover: none) {
+        :is(.icon-action, .launcher-button, .tn-tool-button, .btn, .ck.ck-button:not(.ck-on), .dropdown-item):is(:hover, :focus:not(:focus-visible)):not(:active, .active, .tf-pressed, [aria-expanded="true"]) {
+            background-color: transparent;
+        }
+    }
+
+    /* A tap focuses a button, which would leave its hover tooltip standing over the content. */
+    .tooltip {
+        display: none;
+    }
+
+    .btn.select-button {
+        min-height: var(--tf-hit);
+    }
+
+    /* Rows of small icon buttons get 44 px between centres, so the grown hit areas do not overlap. */
+    .board-header-tools,
+    .collection-properties > div,
+    .modal-header {
+        gap: max(8px, calc(var(--tf-hit) - 32px));
+    }
+
+    :is(.modal-header .custom-title-bar-button, .modal-header .btn-close, .tab-card header .icon-action, .modal-footer .tn-link) {
+        min-width: var(--tf-hit);
+        min-height: var(--tf-hit);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .toc li .item-content {
+        display: flex;
+        align-items: center;
+        min-height: var(--tf-hit);
+    }
+
+    /* 36 px swatches 8 px apart, wrapping, each with a 44 px hit area. */
+    .color-picker {
+        flex-wrap: wrap;
+        justify-content: flex-start;
+
+        .color-cell {
+            --color-picker-cell-size: 36px;
+            position: relative;
+
+            &::after {
+                content: "";
+                position: absolute;
+                inset: -4px;
+            }
+        }
+
+        .custom-color-cell {
+            overflow: visible;
+        }
+    }
+
+    .card-header-buttons {
+        gap: 8px;
+
+        .icon-action {
+            min-width: var(--tf-hit);
+        }
+    }
+
+    .promoted-attribute-cell label {
+        display: inline-flex;
+        align-items: center;
+        min-width: var(--tf-hit);
+        min-height: var(--tf-hit);
+    }
+
+    /*
+     * `setupTodoCheckboxTaps()` toggles a checkbox for taps within 14 px of it, but only on targets
+     * inside the list; this margin around the checkbox's wrapper is such a target.
+     */
+    .note-detail-editable-text .ck-content .todo-list > li {
+        box-sizing: border-box;
+        min-height: var(--tf-hit);
+        padding-block: 4px;
+    }
+
+    .note-detail-editable-text .ck-content .todo-list input[type="checkbox"] {
+        position: relative;
+        z-index: 1;
+    }
+
+    .note-detail-editable-text .ck-content .todo-list .todo-list__label > span[contenteditable="false"] {
+        position: relative;
+        margin-inline-start: 6px;
+
+        &::before {
+            content: "";
+            position: absolute;
+            inset: -14px;
+        }
+    }
+
+    /* At phone width the zoom group sits above the centred edit group instead of beside it. */
+    @media (max-width: 600px) {
+        .relation-map-wrapper .relation-map-toolbar {
+            bottom: calc(var(--overlay-group-inset-bottom, var(--overlay-group-inset)) + var(--tf-hit) + 8px);
+        }
+    }
+
+    /* Rows and handles that a press lifts never start a text selection or the iOS callout. */
+    :is(.mobile-navigator-row, .fancytree-node, .tf-block-handle) {
+        -webkit-touch-callout: none;
+        user-select: none;
+    }
+}
+
+/* The host's keyboard covers the bottom of the frame: the content can scroll past it. */
+:root.tf-embedded.tf-keyboard-covers .scrolling-container {
+    scroll-padding-bottom: calc(var(--mobile-toolbar-clearance, 0px) + var(--tf-keyboard-inset, 0px));
+
+    &::after {
+        content: "";
+        display: block;
+        height: var(--tf-keyboard-inset, 0px);
+    }
+}
+
+/* Reading size of note content (`text_size.ts`); the UI around it keeps its size. */
+:root.tf-embedded.tf-text-scaled {
+    :is(.note-detail-editable-text, .note-detail-readonly-text) .ck-content:not(.ck-content .ck-content) {
+        /* 1.1em matches `--ck-content-font-size` in stylesheets/style.css. */
+        --ck-content-font-size: calc(1.1em * var(--tf-text-scale));
+    }
+
+    .note-detail-code .cm-scroller {
+        font-size: calc(1em * var(--tf-text-scale));
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    :root.tf-embedded {
+        --tf-motion-fast: 0.01ms;
+        --tf-motion-base: 0.01ms;
+    }
+}

@@ -32,6 +32,7 @@ import { getWordWrapMenu } from "./code_menus";
 import NoteActionsCustom from "./NoteActionsCustom";
 import { useShareState } from "./NoteBadges";
 import { NoteTypeDropdownContent } from "./NoteTypeSwitcher";
+import { TfTextSizeRow } from "../../tf/mobile/TextSizeRow.js"; // tf:
 
 export default function NoteActions({ paneButtons = true }: {
     /** Whether to show the buttons that move, close and create splits, which only a split has. */
@@ -181,6 +182,7 @@ export function NoteContextMenu({ note, noteContext, leadingViewActions = [], tr
 
                 {!isMobile && viewStrip}
 
+                <TfTextSizeRow note={note} /> {/* tf: reading size inside Taskforce */}
                 {hasBasicProperties && <NoteBasicProperties note={note} focus={itemToFocusRef} isInPopup={isInPopup} settingsItems={noteSettingsItems} />}
                 {itemsNearNoteSettings}
                 {(hasBasicProperties || itemsNearNoteSettings) && <FormDropdownDivider />}

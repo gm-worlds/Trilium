@@ -13,6 +13,7 @@ import { getSql } from "../../services/sql/index.js";
 import syncOptions from "../../services/sync_options.js";
 import { ValidationError } from "../../errors.js";
 import { getTfUser } from "../../tf/identity.js"; // tf: per-person options
+import { isTfOwnOption } from "../../tf/options.js"; // tf: options of the embedding
 
 // options allowed to be updated directly in the Options dialog
 const ALLOWED_OPTIONS = new Set<OptionNames>([
@@ -321,7 +322,8 @@ function isReadable(name: string) {
     return (ALLOWED_OPTIONS as Set<string>).has(name)
         || name.startsWith("keyboardShortcuts")
         || name.endsWith("Collapsed")
-        || name.startsWith("hideArchivedNotes");
+        || name.startsWith("hideArchivedNotes")
+        || isTfOwnOption(name); // tf: options of the embedding
 }
 
 /** Removes any `user:password@` from a sync address, so it can be shown in the UI. */

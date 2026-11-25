@@ -9,6 +9,8 @@ import server, { setTfCallInterceptor } from "../services/server.js";
 import { getCapabilities, setTfBridge, TfBridge } from "./bridge.js";
 import { installLinkCapture, installShortcutCapture, type TfShortcut } from "./capture.js";
 import { applySessionRefresh } from "./gateway.js";
+import { uninstallTfHistory } from "./history.js";
+import { installTfMobile } from "./mobile/index.js";
 import { tfCallInterceptor } from "./save_guard.js";
 import { setTfBootstrap, type TfBootstrap } from "./state.js";
 import { applyHostTheme, applyViewport, type TfHostTheme, type TfViewport } from "./theme.js";
@@ -51,11 +53,14 @@ export async function startTf() {
         bootstrap = null;
     }
     if (!bootstrap?.embed) {
+        uninstallTfHistory();
         return;
     }
 
     addTfTranslations();
     setTfCallInterceptor(tfCallInterceptor);
+
+    installTfMobile();
 
     const bridge = new TfBridge({ notebookId: bootstrap.notebookId, parentOrigins: bootstrap.parentOrigins });
     setTfBridge(bridge);
@@ -104,6 +109,10 @@ export class TfNoteReporter extends Component {
     }
 
     noteSwitchedAndActivatedEvent() {
+        this.schedule();
+    }
+
+    noteSwitchedEvent() {
         this.schedule();
     }
 

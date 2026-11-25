@@ -3,7 +3,7 @@
  * handling for engine calls.
  *
  * Every call of `services/server.ts` passes through {@link tfCallInterceptor} while embedded:
- * - `PUT notes/:noteId/data` carries `x-tf-base-blob`, the blob the editor started from, and a 409
+ * - `PUT notes/:noteId/data` carries `tf-base-blob`, the blob the editor started from, and a 409
  *   opens {@link ConflictDialog} instead of a generic error toast;
  * - a 401 from the gateway renews the session over the bridge and retries once;
  * - a view-role refusal (`403 { tfReadOnly: true }` from the engine, `403 { error: "read_only" }`
@@ -25,7 +25,7 @@ import Modal from "../widgets/react/Modal.js";
 import { renewSession } from "./gateway.js";
 import { getTfBaseBlob, setTfBaseBlob, type TfCallInterceptor, type TfCallOptions, type TfInterceptedOptions } from "./state.js";
 
-export const TF_BASE_BLOB_HEADER = "x-tf-base-blob";
+export const TF_BASE_BLOB_HEADER = "tf-base-blob";
 
 export interface TfConflict {
     conflict: true;

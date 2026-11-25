@@ -107,8 +107,23 @@ export const TF_PER_USER_OPTIONS: ReadonlySet<string> = new Set([
 
 export const TF_USER_OPTION_PREFIX = "tfu.";
 
+/**
+ * Options only the embedding has, all per person. Upstream's `ALLOWED_OPTIONS` does not list them;
+ * `isReadable()` in `routes/api/options.ts` asks {@link isTfOwnOption} instead.
+ *
+ * | Option | Meaning |
+ * |---|---|
+ * | `tfTextScale` | reading size of note content, 0.8 to 2.2 (`tf/mobile/text_size.ts` in the client) |
+ */
+export const TF_OWN_OPTIONS: ReadonlySet<string> = new Set([ "tfTextScale" ]);
+
+/** Whether `name` is one of {@link TF_OWN_OPTIONS}; always `false` outside embed mode. */
+export function isTfOwnOption(name: string) {
+    return isTfEmbedded() && TF_OWN_OPTIONS.has(name);
+}
+
 export function isTfPerUserOption(name: string) {
-    return TF_PER_USER_OPTIONS.has(name) || name.endsWith("Collapsed");
+    return TF_PER_USER_OPTIONS.has(name) || TF_OWN_OPTIONS.has(name) || name.endsWith("Collapsed");
 }
 
 export function tfUserOptionName(userId: string, name: string) {

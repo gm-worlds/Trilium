@@ -1,11 +1,15 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import becca from "../becca/becca.js";
+import optionsRoute from "../routes/api/options.js";
+import scriptRoute from "../routes/api/script.js";
+import config from "../services/config.js";
 import { getContext } from "../services/context.js";
 import options from "../services/options.js";
+import { isScriptingEnabled } from "../services/scripting_guard.js";
 import { assertTfWritable, TfReadOnlyError } from "./guard.js";
-import { enableTfEmbed, getTfUser, parseTfIdentityHeaders, setTfUser, type TfUser } from "./identity.js";
-import { applyTfOptionOverlay, isTfPerUserOption, resolveTfOptionRead } from "./options.js";
+import { enableTfEmbed, getTfUser, isTfScriptsOff, parseTfIdentityHeaders, setTfScriptsOff, setTfUser, type TfUser } from "./identity.js";
+import { applyTfOptionOverlay, isTfOwnOption, isTfPerUserOption, resolveTfOptionRead } from "./options.js";
 
 const alice: TfUser = { id: "alice", name: "Alice", role: "edit" };
 const vera: TfUser = { id: "vera", name: "Vera", role: "view" };
@@ -80,6 +84,48 @@ describe("tf core", () => {
         enableTfEmbed(false);
         try {
             asUser(vera, () => expect(() => assertTfWritable("notes", "n1")).not.toThrow());
+        } finally {
+            enableTfEmbed(true);
+        }
+    });
+
+    it("turns notebook scripts off without safe mode: empty script lists, no backend scripts", () => {
+        const scriptingConfigured = config.Security.backendScriptingEnabled;
+        config.Security.backendScriptingEnabled = true;
+        try {
+            setTfScriptsOff(true);
+            expect(isTfScriptsOff()).toBe(true);
+            expect(isScriptingEnabled()).toBe(false);
+            expect(asUser(alice, () => scriptRoute.getWidgetBundles())).toEqual([]);
+            expect(asUser(alice, () => scriptRoute.getStartupBundles({ query: {} } as never))).toEqual([]);
+            expect(asUser(alice, () => scriptRoute.getBundle({ params: { noteId: "root" }, body: {} } as never))).toBeNull();
+
+            setTfScriptsOff(false);
+            expect(isScriptingEnabled()).toBe(true);
+
+            setTfScriptsOff(true);
+            enableTfEmbed(false);
+            expect(isTfScriptsOff()).toBe(false);
+            expect(isScriptingEnabled()).toBe(true);
+        } finally {
+            enableTfEmbed(true);
+            setTfScriptsOff(false);
+            config.Security.backendScriptingEnabled = scriptingConfigured;
+        }
+    });
+
+    it("serves the embedding's own options per person, and only while embedded", () => {
+        asUser(alice, () => {
+            options.setOption("tfTextScale" as never, "1.4");
+            expect(isTfOwnOption("tfTextScale")).toBe(true);
+            expect(optionsRoute.getOptions()).toMatchObject({ tfTextScale: "1.4" });
+        });
+        expect(becca.getOption("tfu.alice.tfTextScale")?.value).toBe("1.4");
+        expect(isTfOwnOption("revisionSnapshotNumberLimit")).toBe(false);
+
+        enableTfEmbed(false);
+        try {
+            expect(isTfOwnOption("tfTextScale")).toBe(false);
         } finally {
             enableTfEmbed(true);
         }

@@ -1,0 +1,49 @@
+.tf-text-size-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    min-height: 44px;
+    padding-inline: var(--menu-padding-inline, 12px) 4px;
+
+    .tf-text-size-label {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        white-space: nowrap;
+
+        .bx {
+            font-size: 1.15em;
+            width: 1.2em;
+            text-align: center;
+        }
+    }
+
+    .tf-text-size-controls {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+
+        .icon-action {
+            width: 44px;
+            height: 44px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: var(--tf-radius, 8px);
+            transition: background-color var(--tf-motion-fast) var(--tf-ease-out), scale var(--tf-motion-fast) var(--tf-ease-out);
+
+            &:active:not(:disabled) {
+                scale: 0.94;
+                background-color: var(--hover-item-background-color);
+            }
+        }
+    }
+
+    .tf-text-size-value {
+        min-width: 4.2em;
+        text-align: center;
+        font-variant-numeric: tabular-nums;
+        color: var(--main-text-color);
+    }
+}

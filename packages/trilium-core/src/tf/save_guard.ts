@@ -2,17 +2,17 @@
  * Save guard for embedded notebooks: stops one person's editor from silently replacing what
  * another person saved while they were typing.
  *
- * The client sends the blob id its editor started from in `x-tf-base-blob` with every
+ * The client sends the blob id its editor started from in `tf-base-blob` with every
  * `PUT /api/notes/:noteId/data`. When the note has moved on since, and the person who moved it is
  * someone else (or unknown, e.g. after a restart), the save is refused with 409 and the client asks
- * what to do. `x-tf-base-blob: *` forces the write after keeping the current content as a revision.
+ * what to do. `tf-base-blob: *` forces the write after keeping the current content as a revision.
  */
 import type { Request } from "../http_interface.js";
 import becca from "../becca/becca.js";
 import type BNote from "../becca/entities/bnote.js";
 import { getTfUser, isTfEmbedded } from "./identity.js";
 
-export const TF_BASE_BLOB_HEADER = "x-tf-base-blob";
+export const TF_BASE_BLOB_HEADER = "tf-base-blob";
 
 export interface TfWriter {
     id: string;

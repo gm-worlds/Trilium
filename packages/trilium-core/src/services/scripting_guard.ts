@@ -1,10 +1,11 @@
+import { isTfScriptsOff } from "../tf/identity.js"; // tf: scripts off
 import config from "./config.js";
 
 /**
  * Throws if backend scripting is disabled.
  */
 export function assertScriptingEnabled(): void {
-    if (config.Security.backendScriptingEnabled) {
+    if (config.Security.backendScriptingEnabled && !isTfScriptsOff()) { // tf: scripts off
         return;
     }
     throw new Error(
@@ -23,5 +24,5 @@ export function assertSqlConsoleEnabled(): void {
 }
 
 export function isScriptingEnabled(): boolean {
-    return config.Security.backendScriptingEnabled;
+    return config.Security.backendScriptingEnabled && !isTfScriptsOff(); // tf: scripts off
 }

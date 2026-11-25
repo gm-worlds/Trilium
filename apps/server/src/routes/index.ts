@@ -13,6 +13,7 @@ import openID from "../services/open_id.js";
 import { isDev, isMac, supportsBackgroundMaterial } from "../services/utils.js";
 import totp from "../services/totp.js";
 import { generateCsrfToken } from "./csrf_protection.js";
+import { isTfScriptsOff } from "../tf/env.js"; // tf:
 
 type View = "desktop" | "mobile" | "print";
 
@@ -64,6 +65,7 @@ export function bootstrap(req: Request, res: Response) {
         triliumVersion: packageJson.version,
         device: view,
         TRILIUM_SAFE_MODE: !!process.env.TRILIUM_SAFE_MODE,
+        tfScriptsOff: isTfScriptsOff(), // tf: the client asks for no scripts
         instanceName: config.General ? config.General.instanceName : null,
         // The desktop renderer loads from trilium-app://, so location-based
         // ws:// URL derivation no longer works there. Send an absolute URL.

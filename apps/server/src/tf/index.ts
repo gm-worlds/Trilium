@@ -5,7 +5,7 @@
 import { initTfCore } from "@triliumnext/core/src/tf/index.js";
 import type express from "express";
 
-import { getTfEventsUrl, isTfEmbedEnv } from "./env.js";
+import { getTfEventsUrl, isTfEmbedEnv, isTfScriptsOff } from "./env.js";
 import { TfEventSender } from "./events_sender.js";
 import { tfGatewayGuard } from "./request_context.js";
 import { registerTfRoutes } from "./routes.js";
@@ -19,7 +19,7 @@ export function installTf(app: express.Application) {
 
     sender = new TfEventSender(getTfEventsUrl());
     const eventSender = sender;
-    initTfCore({ eventSink: (event) => eventSender.push(event) });
+    initTfCore({ eventSink: (event) => eventSender.push(event), scriptsOff: isTfScriptsOff() });
 
     app.use(tfGatewayGuard);
     registerTfRoutes();

@@ -12,6 +12,7 @@ import ScriptContext from "./script_context.js";
 import server from "./server.js";
 import toastService, { showErrorForScriptNote } from "./toast.js";
 import utils, { causeChain, getErrorMessage, rootCauseMessage } from "./utils.js";
+import { isTfScriptsOff } from "../tf/state.js"; // tf:
 
 // TODO: Deduplicate with server.
 export interface Bundle {
@@ -33,6 +34,7 @@ export type Widget = WithNoteId<(LegacyWidget | WidgetDefinitionWithType)>;
 export type WidgetBundleResult = Widget | Widget[] | null | undefined;
 
 async function getAndExecuteBundle(noteId: string, originEntity: FNote | null = null, script: string | null = null, params: ScriptParams | null = null, opts?: ExecuteBundleOpts) {
+    if (isTfScriptsOff()) return; // tf: scripts off
     const bundle = await server.post<Bundle>(`script/bundle/${noteId}`, {
         script,
         params
@@ -74,6 +76,7 @@ export async function executeBundle(bundle: Bundle, originEntity?: Entity | null
 }
 
 async function executeStartupBundles() {
+    if (isTfScriptsOff()) return; // tf: scripts off
     const isMobile = utils.isMobile();
     const scriptBundles = await server.get<Bundle[]>(`script/startup${  isMobile ? "?mobile=true" : ""}`);
 
@@ -148,6 +151,7 @@ export class WidgetsByParent {
 
 async function getWidgetBundlesByParent() {
     const widgetsByParent = new WidgetsByParent();
+    if (isTfScriptsOff()) return widgetsByParent; // tf: scripts off
 
     try {
         const scriptBundles = await server.get<Bundle[]>("script/widgets");

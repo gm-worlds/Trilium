@@ -20,6 +20,7 @@ import MapContextMenu from "./MapContextMenu";
 import MapToolbar, { DirectionToolbar } from "./MapToolbar";
 import { renderMemoMarkers } from "./NodeMemo";
 import NodePanel from "./NodePanel";
+import { registerTfMindMap } from "../../../tf/state.js"; // tf:
 
 /**
  * Recursively sanitizes a parsed Mind Elixir data structure in place, neutralizing any
@@ -228,6 +229,7 @@ export function MindElixir({ children, containerRef: externalContainerRef, conta
         localizeBuiltLabels(mind);
 
         apiRef.current = mind;
+        registerTfMindMap(containerRef.current, mind); // tf: two-finger pinch and pan on touch
         if (externalApiRef) {
             externalApiRef.current = mind;
         }

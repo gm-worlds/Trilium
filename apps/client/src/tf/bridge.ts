@@ -232,3 +232,10 @@ export function setTfBridge(value: TfBridge | null) {
 export function getTfBridge() {
     return bridge;
 }
+
+export type TfHapticKind = "light" | "medium" | "success" | "warning";
+
+/** Asks the host to vibrate (`haptic`, capability `tf-touch-1`); nothing happens outside Taskforce. */
+export function tfHaptic(kind: TfHapticKind) {
+    bridge?.notify("haptic", { kind });
+}

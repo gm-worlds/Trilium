@@ -319,7 +319,7 @@ async function call<T>(method: string, url: string, componentId?: string, option
     if (tfCallInterceptor && !options.tf) return await tfCallInterceptor(method, url, componentId, options, call) as T; // tf: save guard, session refresh
     const headers = await getHeaders({
         "trilium-component-id": componentId,
-        ...options.tf?.headers // tf: x-tf-base-blob
+        ...options.tf?.headers // tf: tf-base-blob
     });
     const { data } = options;
 
@@ -386,7 +386,7 @@ function ajax(url: string, method: string, data: unknown, headers: Headers, opts
                     try {
                         await refreshCsrfToken();
                         // Rebuild headers so the fresh glob.csrfToken is picked up
-                        const retryHeaders = await getHeaders({ "trilium-component-id": headers["trilium-component-id"], ...opts.tf?.headers }); // tf: keeps x-tf-base-blob
+                        const retryHeaders = await getHeaders({ "trilium-component-id": headers["trilium-component-id"], ...opts.tf?.headers }); // tf: keeps tf-base-blob
                         const retryResult = await ajax(url, method, data, retryHeaders, { ...opts, csrfRetried: true });
                         res(retryResult);
                         return;

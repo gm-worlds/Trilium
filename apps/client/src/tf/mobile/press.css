@@ -1,0 +1,62 @@
+:root.tf-embedded.tf-touch {
+    /* Wins over the hover and focus backgrounds of Bootstrap, CKEditor and the themes. */
+    .tf-pressed {
+        background-color: color-mix(in srgb, currentColor 14%, transparent) !important;
+        transition: none !important;
+    }
+
+    :is(.icon-action, .launcher-button, .tn-tool-button, .ck-button).tf-pressed {
+        scale: 0.94;
+    }
+
+    :is(.icon-action, .launcher-button, .tn-tool-button, .ck-button, .btn, .dropdown-item, .mobile-navigator-row) {
+        transition: background-color var(--tf-motion-fast) var(--tf-ease-out), scale var(--tf-motion-fast) var(--tf-ease-out);
+    }
+
+    :is(.ck-toolbar, [role="toolbar"], #launcher-pane) :is(.ck-button, button, .launcher-button) {
+        -webkit-touch-callout: none;
+        user-select: none;
+    }
+}
+
+.tf-press-label {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 10002;
+    max-width: calc(100vw - 16px);
+    padding: 6px 12px;
+    border: 1px solid var(--main-border-color);
+    border-radius: 10px;
+    background-color: var(--menu-background-color, var(--main-background-color));
+    color: var(--menu-text-color, var(--main-text-color));
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.22);
+    font-family: var(--main-font-family);
+    font-size: 15px;
+    line-height: 20px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    pointer-events: none;
+}
+
+.tf-press-label-in {
+    animation: tf-press-label-in var(--tf-motion-fast) var(--tf-ease-out);
+}
+
+@keyframes tf-press-label-in {
+    from {
+        opacity: 0;
+        scale: 0.9;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .tf-press-label-in {
+        animation: none;
+    }
+
+    :root.tf-embedded.tf-touch :is(.icon-action, .launcher-button, .tn-tool-button, .ck-button).tf-pressed {
+        scale: none;
+    }
+}

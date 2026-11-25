@@ -201,7 +201,7 @@ describe("Taskforce embedding (TF_EMBED=1)", () => {
         const note = await createNote(alice, "Shared draft");
 
         const first = await as(alice, "put", `/api/notes/${note.noteId}/data`)
-            .set("x-tf-base-blob", note.blobId)
+            .set("tf-base-blob", note.blobId)
             .send({ content: "<p>alice 1</p>" })
             .expect(200);
         const aliceBlob = first.body.blobId as string;
@@ -209,7 +209,7 @@ describe("Taskforce embedding (TF_EMBED=1)", () => {
         expect(aliceBlob).not.toBe(note.blobId);
 
         const conflict = await as(bob, "put", `/api/notes/${note.noteId}/data`)
-            .set("x-tf-base-blob", note.blobId)
+            .set("tf-base-blob", note.blobId)
             .send({ content: "<p>bob from an old copy</p>" })
             .expect(409);
         expect(conflict.body).toMatchObject({
@@ -223,13 +223,13 @@ describe("Taskforce embedding (TF_EMBED=1)", () => {
         expect(becca.getNoteOrThrow(note.noteId).blobId).toBe(aliceBlob);
 
         await as(alice, "put", `/api/notes/${note.noteId}/data`)
-            .set("x-tf-base-blob", note.blobId)
+            .set("tf-base-blob", note.blobId)
             .send({ content: "<p>alice 2 from the older tab</p>" })
             .expect(200);
 
         const revisionsBefore = becca.getNoteOrThrow(note.noteId).getRevisions().length;
         const forced = await as(bob, "put", `/api/notes/${note.noteId}/data`)
-            .set("x-tf-base-blob", "*")
+            .set("tf-base-blob", "*")
             .send({ content: "<p>bob wins</p>" })
             .expect(200);
         const saved = becca.getNoteOrThrow(note.noteId);
