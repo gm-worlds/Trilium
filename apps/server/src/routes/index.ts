@@ -14,6 +14,7 @@ import { isDev, isMac, supportsBackgroundMaterial } from "../services/utils.js";
 import totp from "../services/totp.js";
 import { generateCsrfToken } from "./csrf_protection.js";
 import { isTfEmbedEnv, isTfScriptsOff } from "../tf/env.js"; // tf:
+import { getTfDesktopBootstrap } from "@triliumnext/core/src/tf/desktop.js"; // tf:
 
 type View = "desktop" | "mobile" | "print";
 
@@ -67,6 +68,7 @@ export function bootstrap(req: Request, res: Response) {
         TRILIUM_SAFE_MODE: !!process.env.TRILIUM_SAFE_MODE,
         tfScriptsOff: isTfScriptsOff(), // tf: the client asks for no scripts
         tfEmbed: isTfEmbedEnv(), // tf: the client starts the embedding only when this is true
+        tfDesktop: isElectronRenderer ? getTfDesktopBootstrap() : undefined, // tf: Taskforce Notes: the connect screen or the notes
         instanceName: config.General ? config.General.instanceName : null,
         // The desktop renderer loads from trilium-app://, so location-based
         // ws:// URL derivation no longer works there. Send an absolute URL.

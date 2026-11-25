@@ -748,5 +748,6 @@ export default {
     showAndFocusWindow,
     getMainWindow,
     getLastFocusedWindow,
-    getAllWindows
+    getAllWindows,
+    getSetupWindow: () => setupWindow // tf: the connect screen of Taskforce Notes
 };

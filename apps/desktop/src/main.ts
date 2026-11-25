@@ -1,3 +1,4 @@
+import "./tf/prelude"; // tf: Taskforce Notes points the data folder and port at its own, before anything reads them
 import { becca_loader, cls, entity_changes, getLog, initializeCore, options, sql_init, ws } from "@triliumnext/core";
 import ServerBackupService from "@triliumnext/server/src/backup_provider.js";
 import AsyncLocalStorageExecutionContext from "@triliumnext/server/src/cls_provider.js";
@@ -50,6 +51,7 @@ import { markStartupMetric, setupStartupMetricsIpc } from "./services/startup_me
 import { setupTranscriptionHandlers } from "./services/transcription";
 import { setupSystemTray } from "./services/tray";
 import windowService, { setupWindowing } from "./services/window";
+import { handleTfSecondInstance, initTfDesktopMain, tfDesktopOnReady } from "./tf/index"; // tf:
 
 export async function main() {
     markStartupMetric("main-process-start");
@@ -65,6 +67,7 @@ export async function main() {
     }
 
     registerTriliumAppScheme();
+    initTfDesktopMain(); // tf: Taskforce Notes (TF_DESKTOP=1): scheme, IPC, device key
 
     const userDataPath = getUserData();
     app.setPath("userData", userDataPath);
@@ -152,6 +155,7 @@ export async function main() {
     });
 
     app.on("second-instance", (event, commandLine) => {
+        if (handleTfSecondInstance(commandLine)) return; // tf: a taskforce-notes: link
         if (commandLine.includes("--new-window")) {
             windowService.createExtraWindow("");
         } else {
@@ -386,6 +390,8 @@ async function onReady() {
     // the same value the working browser client sends. Registered on the shared
     // default session before any window is created.
     setupReferer(`http://localhost:${port}/`);
+
+    if (await tfDesktopOnReady()) return; // tf: the connect screen while this Mac has no device key
 
     // if db is not initialized -> setup process
     // if db is initialized, then we need to wait until the migration process is finished

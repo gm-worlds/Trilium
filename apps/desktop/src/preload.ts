@@ -11,6 +11,8 @@ import type {
 } from "@triliumnext/commons";
 import { contextBridge, ipcRenderer, webFrame, webUtils } from "electron";
 
+import { createTfDesktopApi } from "./tf/preload_api"; // tf:
+
 contextBridge.exposeInMainWorld("electronApi", {
     window: {
         // Zoom
@@ -363,5 +365,6 @@ contextBridge.exposeInMainWorld("electronApi", {
         login(): Promise<OneNoteLoginResult> {
             return ipcRenderer.invoke("onenote-login");
         }
-    }
+    },
+    tfDesktop: createTfDesktopApi(ipcRenderer) // tf: Taskforce Notes
 } satisfies ElectronApi);
