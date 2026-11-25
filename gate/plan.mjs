@@ -9,7 +9,7 @@
 //   prerelease for that pair exists or an open issue already reports this exact stack failing on
 //   it. Published only as a prerelease; a person switches tf/stack over (upstream migrations are
 //   one-way). WATCH_TAG names the tag by hand (any tag, also a release candidate: for testing the
-//   watch itself).
+//   watch itself; a tag named by hand is taken even when it is not newer than the stack's base).
 //
 // Env: GITHUB_REPOSITORY, GH_TOKEN, UPSTREAM, STACK_BRANCH, FORCE, WATCH, WATCH_TAG, GITHUB_OUTPUT.
 import { appendFileSync } from "node:fs";
