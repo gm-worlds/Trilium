@@ -161,10 +161,19 @@ jobs:
         id: specs
         run: node ci/gate/tf-specs.mjs --src src --base "${ONTO:-$BASE}" --github-output "$GITHUB_OUTPUT"
 
+      # Upstream's route_api.spec.ts imports csrf_protection.ts, which reads spec/db/session_secret.txt
+      # at import time and, when the file is missing, makes one with the crypto provider that
+      # spec/setup.ts only initialises later ("Crypto not initialized"). In upstream's full suite
+      # some earlier spec has written the file by then; a narrow run has no earlier spec, so the
+      # file is written here, the way session_secret.ts would write it.
       - name: Specs, server (tf, core on Node, upstream specs of touched files)
         id: test_server
         working-directory: src
-        run: pnpm --filter server exec vitest run ${{ steps.specs.outputs.server_args }}
+        run: |
+          set -euo pipefail
+          mkdir -p apps/server/spec/db
+          [ -f apps/server/spec/db/session_secret.txt ] || node -e "process.stdout.write(require('crypto').randomBytes(48).toString('base64url').slice(0, 64))" > apps/server/spec/db/session_secret.txt
+          pnpm --filter server exec vitest run ${{ steps.specs.outputs.server_args }}
 
       - name: Specs, standalone (core on SQLite WASM)
         id: test_standalone
