@@ -135,7 +135,8 @@ jobs:
             exit 1
           fi
           git log --oneline "$ONTO..HEAD"
-          git bundle create "$RUNNER_TEMP/tf-next-$ONTO.bundle" "tf/next-$ONTO"
+          # Only the stack's commits: whoever fetches it has upstream's tag already (a whole-history bundle is 700 MB).
+          git bundle create "$RUNNER_TEMP/tf-next-$ONTO.bundle" "$ONTO..tf/next-$ONTO"
           echo "rebased=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
       - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
@@ -449,7 +450,7 @@ jobs:
             echo
             echo "Source (AGPL-3.0): https://github.com/${GITHUB_REPOSITORY}/tree/${source_sha} (commit \`${source_sha}\`)."
             if [ "$NAME" = next ] && [ "$target" != "$source_sha" ]; then
-              echo "That commit is in \`tf-next-${ONTO}.bundle\` attached here (\`git fetch tf-next-${ONTO}.bundle tf/next-${ONTO}\`); the branch could not be pushed by the workflow."
+              echo "That commit is in \`tf-next-${ONTO}.bundle\` attached here (fetch upstream's tag ${ONTO} first, then \`git fetch tf-next-${ONTO}.bundle tf/next-${ONTO}\`); the branch could not be pushed by the workflow."
             fi
             echo "Upstream: https://github.com/${UPSTREAM}/releases/tag/${ONTO:-$BASE}"
             echo "Built and gated by ${RUN_URL}"

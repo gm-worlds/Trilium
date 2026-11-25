@@ -23,7 +23,7 @@ rest) are disabled in this fork; only `tf-release` runs.
 
 | When | What |
 |---|---|
-| a push to `tf/stack` (through `tf-stack-push.yml` on that branch), every hour, or by hand | `tf/stack` as it is, if its commit has no release yet (`force` builds anyway) |
+| a push to `tf/stack` (through `.github/workflows/tf-stack-push.yml` on that branch; its source is `stack-files/tf-stack-push.yml` here), every hour, or by hand | `tf/stack` as it is, if its commit has no release yet (`force` builds anyway) |
 | every day at 04:41 UTC, or by hand with `watch` | also: `tf/stack` rebased onto upstream's newest stable tag, if that is newer than the stack's base |
 
 For each build:
@@ -60,7 +60,8 @@ database migrations are one-way, so a person switches.
 
 The default token may not create or change files under `.github/workflows`, and upstream changes
 its workflows between releases, so the workflow's push of `tf/next-<tag>` can be refused. The
-prerelease then carries `tf-next-<tag>.bundle` with the exact commits.
+prerelease then carries `tf-next-<tag>.bundle` with the stack's commits on top of the upstream
+tag (fetch the tag from upstream first, then `git fetch tf-next-<tag>.bundle tf/next-<tag>`).
 
 ## Cut a release by hand
 
