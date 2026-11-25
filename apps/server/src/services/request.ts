@@ -115,7 +115,8 @@ export default class NodeRequestProvider implements RequestProvider {
                     "Content-Type": paging.pageCount === 1 ? "application/json" : "text/plain",
                     pageCount: paging.pageCount,
                     pageIndex: paging.pageIndex,
-                    requestId: paging.requestId
+                    requestId: paging.requestId,
+                    ...opts.headers // tf: extra headers (the desktop app's x-tf-device)
                 };
 
                 if (opts.auth) {
@@ -180,7 +181,7 @@ export default class NodeRequestProvider implements RequestProvider {
                             try {
                                 const jsonObj = JSON.parse(responseStr);
 
-                                errorMessage = jsonObj?.message || "";
+                                errorMessage = jsonObj?.message || jsonObj?.error || ""; // tf: the gateway answers { error }
                             } catch (e: any) {
                                 errorMessage = responseStr.substr(0, Math.min(responseStr.length, 100));
                             }

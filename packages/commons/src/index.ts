@@ -44,6 +44,7 @@ export { default as BUILTIN_ATTRIBUTES } from "./lib/builtin_attributes.js";
 export * from "./lib/backup_name.js";
 export * from "./lib/filesystem_name.js";
 export * from "./lib/electron_api_interface.js";
+export * from "./lib/tf_desktop.js"; // tf: the Taskforce Notes desktop app
 export * from "./lib/security_settings.js";
 export * from "./lib/setup_marker.js";
 export * from "./lib/standalone_api_interface.js";

@@ -10,6 +10,7 @@
  */
 import type { SecurityToggleApi } from "./security_settings.js";
 import type { TranscriptSource } from "./transcript.js";
+import type { ElectronTfDesktopApi } from "./tf_desktop.js"; // tf:
 
 /**
  * Parameters delivered by the main process to the renderer when the user opens
@@ -931,4 +932,6 @@ export interface ElectronApi {
     restore: ElectronRestoreApi;
     /** Meeting transcription: starting and stopping a recording, and following its state. */
     transcription: ElectronTranscriptionApi;
+    /** The Taskforce Notes connection (`TF_DESKTOP=1` builds; inert in upstream builds). */
+    tfDesktop: ElectronTfDesktopApi; // tf:
 }

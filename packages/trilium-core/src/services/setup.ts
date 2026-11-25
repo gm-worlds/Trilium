@@ -10,6 +10,7 @@ import becca from "../becca/becca.js";
 import type { SetupStatusResponse, SetupSyncFromServerResponse, SetupSyncSeedResponse } from "@triliumnext/commons";
 import request from "./request.js";
 import { discardExistingData } from "./setup_existing.js";
+import { getTfSyncHeaders } from "../tf/desktop.js"; // tf: the desktop app's device key
 
 async function hasSyncServerSchemaAndSeed() {
     const response = await requestToSyncServer<SetupStatusResponse>("GET", "/api/setup/status");
@@ -61,7 +62,8 @@ async function requestToSyncServer<T>(method: string, path: string, body?: strin
             url: syncOptions.getSyncServerHost() + path,
             body,
             proxy: syncOptions.getSyncProxy(),
-            timeout: timeout
+            timeout: timeout,
+            headers: getTfSyncHeaders() // tf: x-tf-device
         }),
         timeout
     )) as T;
@@ -85,7 +87,8 @@ async function setupSyncFromSyncServer(syncServerHost: string, syncProxy: string
             url: `${syncServerHost}/api/setup/sync-seed`,
             auth: { password, totpToken },
             proxy: syncProxy,
-            timeout: 30000 // seed request should not take long
+            timeout: 30000, // seed request should not take long
+            headers: getTfSyncHeaders() // tf: x-tf-device
         });
 
         if (resp.syncVersion !== appInfo.syncVersion) {

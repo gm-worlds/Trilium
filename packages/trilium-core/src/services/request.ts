@@ -21,6 +21,7 @@ export interface ExecOpts {
     };
     timeout: number;
     body?: string | {};
+    headers?: Record<string, string>; // tf: extra headers (the desktop app's x-tf-device)
 }
 
 /** What a resource fetch is allowed to cost, and what it asks for. */

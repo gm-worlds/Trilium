@@ -24,6 +24,7 @@ import becca_loader from "../becca/becca_loader.js";
 import * as binary_utils from "./utils/binary.js";
 import { getCrypto } from "./encryption/crypto.js";
 import { isTfSyncOff } from "../tf/policy.js"; // tf: no sync when embedded
+import { assertTfDesktopSyncAllowed, getTfSyncHeaders, isTfDesktop, noteTfSyncError, noteTfSyncSuccess } from "../tf/desktop.js"; // tf: the desktop app's device key
 
 let proxyToggle = true;
 
@@ -142,6 +143,7 @@ async function sync() {
             // "finalizing". Idempotent no-op on already-initialized databases.
             sqlInit.setDbAsInitialized();
 
+            noteTfSyncSuccess(); // tf: last sync time for Settings
             ws.syncFinished();
 
             if (optionService.getOptionOrNull("syncIncomplete") === "true") {
@@ -155,6 +157,7 @@ async function sync() {
             };
         });
     } catch (e: any) {
+        noteTfSyncError(e); // tf: a revoked device or another sync version stops the loop
         // we're dynamically switching whether we're using proxy or not based on whether we encountered error with the current method
         proxyToggle = !proxyToggle;
 
@@ -255,7 +258,7 @@ function getLastSyncError() {
 }
 
 async function login() {
-    if (!(await setupService.hasSyncServerSchemaAndSeed())) {
+    if (!isTfDesktop() && !(await setupService.hasSyncServerSchemaAndSeed())) { // tf: the gateway passes sync routes only, and the engine always has the seed
         await setupService.sendSeedToSyncServer();
     }
 
@@ -615,6 +618,7 @@ interface SyncContext {
 
 async function syncRequest<T extends {}>(syncContext: SyncContext, method: string, requestPath: string, _body?: {}) {
     if (isTfSyncOff()) throw new Error("Sync is off in an embedded notebook."); // tf: no outbound sync request
+    assertTfDesktopSyncAllowed(); // tf: nothing leaves without a live device key
     const body = serializeSyncRequestBody(_body);
 
     const timeout = syncOptions.getSyncTimeout();
@@ -636,7 +640,8 @@ async function syncRequest<T extends {}>(syncContext: SyncContext, method: strin
                 requestId
             },
             body: body.substr(pageIndex * PAGE_SIZE, Math.min(PAGE_SIZE, body.length - pageIndex * PAGE_SIZE)),
-            proxy: proxyToggle ? syncOptions.getSyncProxy() : null
+            proxy: proxyToggle ? syncOptions.getSyncProxy() : null,
+            headers: getTfSyncHeaders() // tf: x-tf-device
         };
 
         response = (await timeLimit(request.exec(opts), timeout)) as T;

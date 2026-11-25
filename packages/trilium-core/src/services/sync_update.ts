@@ -9,6 +9,7 @@ import { default as eventService } from "./events.js";
 import entity_constructor from "../becca/entity_constructor.js";
 import { decodeBase64, decodeBase64Into } from "./utils/binary.js";
 import dateUtils from "./utils/date.js";
+import { isTfDesktopOptionChange } from "../tf/desktop.js"; // tf: the desktop app's device key
 
 interface UpdateContext {
     alreadyErased: number;
@@ -52,6 +53,7 @@ function updateEntities(entityChanges: EntityChangeRecord[], instanceId: string)
 }
 
 function updateEntity(remoteEC: EntityChange, remoteEntityRow: EntityRow | undefined, instanceId: string, updateContext: UpdateContext) {
+    if (isTfDesktopOptionChange(remoteEC)) return; // tf: the device key and its companions never arrive by sync
     if (!remoteEntityRow && remoteEC.entityName === "options") {
         return; // can be undefined for options with isSynced=false
     }
