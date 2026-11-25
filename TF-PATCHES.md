@@ -491,10 +491,15 @@ TF_DESKTOP=1 TF_DESKTOP_BUILD=1 pnpm --filter desktop build
 node apps/desktop/e2e-tf/run.mjs <work dir> <engine port> <stock port> <gateway port> <app port>
 ```
 
+The app icon and the installer disk's icon come from `TF_DESKTOP_ICON_DIR` (`icon.icon`, `icon.icns`,
+`volume.icns`; `electron-forge/tf-desktop.ts`), so no logo lives in this repository; without it the
+build keeps upstream's icons. `electron-forge/dmg-icon/generate.mts --mark <image> --out <file.icns>`
+renders a disk icon around another mark.
+
 Signed and notarized build (macOS arm64), written to `apps/desktop/out/tf-desktop/<version>/`
 with `meta.json`:
 
 ```bash
 TF_DESKTOP_BUILD=<n> TF_SIGN_IDENTITY="Developer ID Application: …" TF_NOTARY_PROFILE=<profile> \
-    node scripts/tf-desktop-build.mjs [--out <dir>] [--unsigned]
+    TF_DESKTOP_ICON_DIR=<folder> node scripts/tf-desktop-build.mjs [--out <dir>] [--unsigned]
 ```

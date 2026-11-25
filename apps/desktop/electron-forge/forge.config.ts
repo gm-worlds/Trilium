@@ -7,7 +7,7 @@ import path, { join } from "path";
 
 import packageJson from "../package.json" with { type: "json" };
 import { PRODUCT_NAME } from "../src/app-info.js";
-import { tfDesktopPackagerConfig, TF_DESKTOP_EXECUTABLE_NAME } from "./tf-desktop.js"; // tf:
+import { tfDesktopPackagerConfig, tfDesktopVolumeIcon, TF_DESKTOP_EXECUTABLE_NAME } from "./tf-desktop.js"; // tf:
 
 const ELECTRON_FORGE_DIR = __dirname;
 
@@ -152,7 +152,7 @@ const config: ForgeConfig = {
                 // title bar) — a drive body carrying the mark, NOT the app icon, so the
                 // installer reads as media rather than a second copy of the app.
                 // Generated from dmg-icon/volume-icon.html; see that folder's README.
-                icon: path.join(ELECTRON_FORGE_DIR, "dmg-icon",
+                icon: tfDesktopVolumeIcon() ?? path.join(ELECTRON_FORGE_DIR, "dmg-icon", // tf: Taskforce Notes' own disk icon
                     isNightly ? "volume-dev.icns" : "volume.icns"),
                 // Branded Finder-window background (generated from dmg-background/background.html).
                 // appdmg auto-uses the sibling background@2x.png for Retina.

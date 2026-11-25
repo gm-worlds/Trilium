@@ -54,19 +54,20 @@ const SLOTS: Record<string, number> = {
  * One volume icon per channel. The mark is read from the client's own icon SVGs so the leaves stay
  * single-sourced — this folder never gets its own copy of the leaf paths.
  */
-const VARIANTS = [
-    { mark: "icon-color.svg", baseName: "volume" },
-    { mark: "icon-nightly.svg", baseName: "volume-dev" }
+const VARIANTS = customVariant() ?? [
+    { markPath: path.join(CLIENT_ASSETS, "icon-color.svg"), icnsPath: path.join(DMG_ICON_DIR, "volume.icns") },
+    { markPath: path.join(CLIENT_ASSETS, "icon-nightly.svg"), icnsPath: path.join(DMG_ICON_DIR, "volume-dev.icns") }
 ];
 
 const browser = await chromium.launch();
 try {
-    for (const { mark, baseName } of VARIANTS) {
-        const iconsetDir = path.join(DMG_ICON_DIR, `${baseName}.iconset`);
+    for (const { markPath, icnsPath } of VARIANTS) {
+        const baseName = path.basename(icnsPath, ".icns");
+        const iconsetDir = path.join(path.dirname(icnsPath), `${baseName}.iconset`);
         rmSync(iconsetDir, { recursive: true, force: true });
         mkdirSync(iconsetDir, { recursive: true });
 
-        const markUrl = pathToFileURL(path.join(CLIENT_ASSETS, mark)).href;
+        const markUrl = pathToFileURL(markPath).href;
         const renders = new Map<number, Buffer>();
 
         for (const size of new Set(Object.values(SLOTS))) {
@@ -92,11 +93,31 @@ try {
             continue;
         }
 
-        const icnsPath = path.join(DMG_ICON_DIR, `${baseName}.icns`);
         execFileSync("iconutil", ["-c", "icns", iconsetDir, "-o", icnsPath]);
         rmSync(iconsetDir, { recursive: true, force: true });
         console.log(`[${baseName}] ${icnsPath}`);
     }
 } finally {
     await browser.close();
+}
+
+/**
+ * tf: one volume icon from another mark (`--mark <image> --out <file.icns>`), for a build whose
+ * mark does not live in this repository.
+ */
+function customVariant() {
+    const args = process.argv.slice(2);
+    const value = (flag: string) => {
+        const index = args.indexOf(flag);
+        return index === -1 ? undefined : args[index + 1];
+    };
+    const mark = value("--mark");
+    const out = value("--out");
+    if (!mark && !out) {
+        return null;
+    }
+    if (!mark || !out) {
+        throw new Error("generate.mts: --mark and --out go together");
+    }
+    return [ { markPath: path.resolve(mark), icnsPath: path.resolve(out) } ];
 }

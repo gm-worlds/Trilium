@@ -1,7 +1,10 @@
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "fs";
+import { tmpdir } from "os";
+import path from "path";
 import { describe, expect, it } from "vitest";
 
 import { applyTfDesktopEnv, assertTfDataDirInUse, parseBuildNumber, resolveTfDataDir, TF_DEFAULT_PORT } from "./flavour";
-import { tfDesktopPackagerConfig } from "../../electron-forge/tf-desktop";
+import { tfDesktopPackagerConfig, tfDesktopVolumeIcon } from "../../electron-forge/tf-desktop";
 
 const home = "/home-example/person";
 
@@ -63,5 +66,23 @@ describe("Taskforce Notes flavour", () => {
         expect(signed.osxSign).toMatchObject({ identity: "Developer ID Application: Example (TEAMID0000)" });
         expect(signed.osxNotarize).toEqual({ keychainProfile: "example-profile" });
         expect(() => tfDesktopPackagerConfig({ TF_DESKTOP: "1", TF_DESKTOP_BUILD: "7", TF_NOTARY_PROFILE: "p" })).toThrow();
+    });
+
+    it("takes the app and disk icons from TF_DESKTOP_ICON_DIR, and refuses a folder missing one", () => {
+        const dir = mkdtempSync(path.join(tmpdir(), "tf-icons-"));
+        try {
+            const env = { TF_DESKTOP: "1", TF_DESKTOP_BUILD: "7", TF_DESKTOP_ICON_DIR: dir };
+            mkdirSync(path.join(dir, "icon.icon"));
+            writeFileSync(path.join(dir, "icon.icns"), "");
+            expect(() => tfDesktopPackagerConfig(env)).toThrow(/volume\.icns/);
+            writeFileSync(path.join(dir, "volume.icns"), "");
+            expect(tfDesktopPackagerConfig(env).icon).toBe(path.join(dir, "icon"));
+            expect(tfDesktopVolumeIcon(env)).toBe(path.join(dir, "volume.icns"));
+            expect(tfDesktopVolumeIcon({ TF_DESKTOP_ICON_DIR: dir })).toBeNull();
+            expect(tfDesktopPackagerConfig({ TF_DESKTOP: "1", TF_DESKTOP_BUILD: "7" }).icon).toBeUndefined();
+            expect(tfDesktopVolumeIcon({ TF_DESKTOP: "1", TF_DESKTOP_BUILD: "7" })).toBeNull();
+        } finally {
+            rmSync(dir, { recursive: true, force: true });
+        }
     });
 });
