@@ -142,15 +142,19 @@ try {
     });
 
     let note = null;
-    await check("stale save by someone else answers 409, the same writer passes", async () => {
+    await check("stale save by someone else answers 409, the same tab of the same writer passes", async () => {
         note = await engine.createNote(ALICE, "Gate draft", "<p>start</p>");
-        const first = await engine.saveNote(ALICE, note.noteId, "<p>alice 1</p>", note.blobId);
+        const first = await engine.saveNote(ALICE, note.noteId, "<p>alice 1</p>", note.blobId, "gate-tab-1");
         expect(first.status === 200 && first.json?.blobId && first.json.blobId !== note.blobId, `Alice's save: ${first.status} ${first.text.slice(0, 120)}`);
         const stale = await engine.saveNote(BOB, note.noteId, "<p>bob from an old copy</p>", note.blobId);
         expect(stale.status === 409, `Bob's stale save: ${stale.status}`);
         expect(stale.json?.conflict === true && stale.json?.blobId === first.json.blobId && stale.json?.editedBy?.id === ALICE.id, `409 body ${stale.text.slice(0, 200)}`);
-        const again = await engine.saveNote(ALICE, note.noteId, "<p>alice 2</p>", note.blobId);
-        expect(again.status === 200, `Alice from her older tab: ${again.status}`);
+        // Alice's own second device, still on the old copy, is told too (her newer text is not overwritten silently).
+        const phone = await engine.saveNote(ALICE, note.noteId, "<p>alice on her phone</p>", note.blobId, "gate-tab-2");
+        expect(phone.status === 409, `Alice's other device with a stale copy: ${phone.status}`);
+        // The tab that wrote last may save again from the copy its own save replaced.
+        const again = await engine.saveNote(ALICE, note.noteId, "<p>alice 2</p>", note.blobId, "gate-tab-1");
+        expect(again.status === 200, `Alice from the tab that wrote last: ${again.status}`);
         const blob = await engine.request("GET", `/api/notes/${note.noteId}/blob`, { who: BOB });
         expect(String(blob.json?.content).includes("alice 2"), `stored content ${blob.text.slice(0, 120)}`);
     });

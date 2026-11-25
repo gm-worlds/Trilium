@@ -214,12 +214,12 @@ export class Engine {
      * `tf-base-blob` now (the gateway strips every incoming `x-tf-*`); both are sent so the check
      * holds for builds on either side of that change.
      */
-    saveNote(who, noteId, content, baseBlob) {
-        return this.request("PUT", `/api/notes/${noteId}/data`, {
-            who,
-            body: { content },
-            headers: baseBlob ? { "tf-base-blob": baseBlob, "x-tf-base-blob": baseBlob } : {},
-        });
+    saveNote(who, noteId, content, baseBlob, clientId = null) {
+        const headers = baseBlob ? { "tf-base-blob": baseBlob, "x-tf-base-blob": baseBlob } : {};
+        // Names the browser tab the save comes from: the guard lets a stale base through only
+        // for the tab that wrote last (builds before that rule ignore the header).
+        if (clientId) headers["tf-client-id"] = clientId;
+        return this.request("PUT", `/api/notes/${noteId}/data`, { who, body: { content }, headers });
     }
 }
 
