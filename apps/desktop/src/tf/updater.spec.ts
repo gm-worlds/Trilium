@@ -18,7 +18,7 @@ describe("Taskforce Notes updates", () => {
         expect(squirrelFeed({ syncServerHost: "https://nb-example.invalid/", deviceToken: "tok", build: 12 })).toEqual({
             url: "https://nb-example.invalid/__tf/desktop/squirrel?build=12",
             headers: { "x-tf-device": "tok" },
-            serverType: "json"
+            serverType: "default"
         });
         expect(squirrelFeed({ syncServerHost: "https://nb-example.invalid", deviceToken: "", build: 12 })).toBeNull();
         expect(squirrelFeed({ syncServerHost: "https://nb-example.invalid", deviceToken: "tok", build: 0 })).toBeNull();

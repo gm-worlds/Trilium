@@ -6,6 +6,7 @@ import { t } from "i18next";
 import path from "path";
 
 import { markStartupMetric } from "./startup_metrics.js";
+import { TF_DESKTOP } from "../tf/flavour.js";
 import { isTriliumAppShellUrl, TRILIUM_APP_BASE_URL } from "./trilium_app_origin.js";
 import { setupWebContentsSecurity } from "./web_contents_security.js";
 import { createWindowStateKeeper } from "./window_state.js";
@@ -710,7 +711,9 @@ export function setupWindowing() {
     // flow). Idempotent: if no setup window exists (e.g., DB was already
     // initialized at startup and main was created in onReady), this is a no-op.
     events.subscribe(events.DB_INITIALIZED, async () => {
-        if (!setupWindow) return;
+        // Taskforce Notes swaps its connect screen itself once becca has loaded (tf/index.ts
+        // openNotesAfterFirstSync); this one runs before the startup options exist and fails.
+        if (!setupWindow || TF_DESKTOP) return;
         try {
             await createMainWindow();
             closeSetupWindow();

@@ -24,7 +24,9 @@ export function squirrelFeed({ syncServerHost, deviceToken, build }: FeedSource)
     return {
         url: `${origin}/__tf/desktop/squirrel?build=${build}`,
         headers: { "x-tf-device": deviceToken },
-        serverType: "json" as const
+        // The gateway is an update *server* (200 with `{ url }`, 204 when up to date). "json" would
+        // make Squirrel expect a static releases file and call every answer invalid.
+        serverType: "default" as const
     };
 }
 
