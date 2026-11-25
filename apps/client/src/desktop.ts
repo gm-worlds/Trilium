@@ -13,6 +13,7 @@ import { onEffectiveThemeStyleChange, setBackgroundEffectsSuspended } from "./se
 import toastService from "./services/toast.js";
 import utils from "./services/utils.js";
 import { maybeStartTf } from "./tf/state.js"; // tf:
+import { startTfDesktopNotice } from "./tf/desktop/notice.js"; // tf:
 import { preloadCommonNoteTypes } from "./widgets/note_types.js";
 
 await appContext.earlyInit();
@@ -43,6 +44,7 @@ export const ready = bundleService.getWidgetBundlesByParent().then(async (widget
     reportFullRenderStartupMetric();
     preloadCommonNoteTypes();
     maybeStartTf(); // tf: Taskforce embedding, only inside a frame
+    startTfDesktopNotice(); // tf: Taskforce Notes: disconnected and update notices
 });
 
 glob.setupGlobs();

@@ -12,6 +12,8 @@ import EtapiSettings from "./options/etapi";
 import BackupSettings from "./options/backup";
 import DatabaseSettings from "./options/database";
 import SyncOptions from "./options/sync";
+import TfDesktopSyncOptions from "../../tf/desktop/sync_options"; // tf:
+import { isTfDesktopClient } from "../../tf/desktop/state"; // tf:
 import DesktopSettings from "./options/desktop";
 import OtherSettings from "./options/other";
 import InternationalizationOptions from "./options/i18n";
@@ -42,7 +44,7 @@ export const CONTENT_WIDGETS: Record<OptionPages | "_backendLog" | "_spaceUsage"
     _optionsBackup: BackupSettings,
     _optionsDatabase: DatabaseSettings,
     _optionsResources: ResourcesSettings,
-    _optionsSync: SyncOptions,
+    _optionsSync: isTfDesktopClient() ? TfDesktopSyncOptions : SyncOptions, // tf: Taskforce Notes shows its connection
     _optionsDesktop: DesktopSettings,
     _optionsOther: OtherSettings,
     _optionsLocalization: InternationalizationOptions,

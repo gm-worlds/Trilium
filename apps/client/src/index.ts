@@ -253,6 +253,8 @@ async function loadScripts() {
 }
 
 function importEntry(): Promise<{ ready?: Promise<unknown> }> {
+    if ((glob as { tfDesktop?: { needsConnect: boolean } }).tfDesktop?.needsConnect) return import("./tf/desktop/connect.js"); // tf: Taskforce Notes without a device key
+
     if (!glob.dbInitialized) {
         return import("./setup.js");
     }

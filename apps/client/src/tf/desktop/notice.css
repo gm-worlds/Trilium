@@ -1,0 +1,10 @@
+#toast-tf-desktop-notice .toast-buttons .btn {
+    background: var(--link-color);
+    color: var(--main-background-color);
+
+    &:hover,
+    &:focus-visible {
+        background: color-mix(in srgb, var(--link-color) 85%, var(--main-text-color));
+        color: var(--main-background-color);
+    }
+}

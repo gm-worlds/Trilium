@@ -21,6 +21,7 @@ import {
 } from "../react/hooks";
 import { MenuItemRows } from "../react/Menu";
 import { ParentComponent } from "../react/react_utils";
+import { isTfDesktopClient } from "../../tf/desktop/state"; // tf:
 
 interface MenuItemProps<T> {
     icon: string,
@@ -331,7 +332,7 @@ export function useTriliumUpdateStatus() {
     const isUpdateAvailable = utils.isUpdateAvailable(latestVersion, window.glob.triliumVersion);
 
     useEffect(() => {
-        if (!checkForUpdates || isStandalone) {
+        if (!checkForUpdates || isStandalone || isTfDesktopClient()) { // tf: Taskforce Notes updates itself from the notebook
             setLatestVersion(undefined);
             return;
         }

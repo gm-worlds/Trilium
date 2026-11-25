@@ -17,6 +17,7 @@ import { useTriliumOption, useTriliumOptionBool, useTriliumOptionJson } from "..
 import OptionsPageHeader from "./components/OptionsPageHeader";
 import TimeSelector from "./components/TimeSelector";
 import { isTfHiddenUi } from "../../../tf/state.js"; // tf:
+import { isTfDesktopClient } from "../../../tf/desktop/state.js"; // tf:
 
 export default function OtherSettings() {
     return (
@@ -30,7 +31,7 @@ export default function OtherSettings() {
             <RevisionSettings />
             <HtmlImportTags />
             {!isTfHiddenUi("shareOptions") && <ShareSettings />} {/* tf: /share pages are closed inside Taskforce */}
-            <NetworkSettings />
+            {!isTfDesktopClient() && <NetworkSettings />} {/* tf: Taskforce Notes updates itself from the notebook */}
         </>
     );
 }

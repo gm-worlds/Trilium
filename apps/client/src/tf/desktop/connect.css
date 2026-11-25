@@ -1,0 +1,114 @@
+body.setup.tf-desktop-connect {
+    background: var(--main-background-color);
+    color: var(--main-text-color);
+
+    .setup-container {
+        background: var(--main-background-color);
+    }
+
+    .illustration-icon,
+    .sync-illustration .tn-icon {
+        color: var(--muted-text-color);
+        opacity: 1;
+    }
+
+    .form-text {
+        color: var(--muted-text-color);
+        opacity: 1;
+    }
+
+    .admonition.caution {
+        &::before,
+        .tn-icon {
+            color: var(--form-error-text-color);
+        }
+    }
+
+    .admonition.note {
+        &::before,
+        .tn-icon {
+            color: var(--link-color);
+        }
+    }
+
+    .tf-checking {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        margin-top: 1rem;
+        color: var(--muted-text-color);
+
+        .tn-icon {
+            color: var(--link-color);
+        }
+    }
+
+    .page.tf-link footer {
+        display: flex;
+        justify-content: flex-end;
+        gap: 0.5rem;
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35em;
+        }
+    }
+
+    .tf-notebook-line {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        margin-top: 1rem;
+
+        .tf-notebook-label {
+            color: var(--muted-text-color);
+            font-size: 0.85em;
+        }
+
+        .ext-badge.tf-notebook-pill {
+            --color: var(--badge-background-color);
+            color: var(--main-text-color);
+            font-size: 0.85em;
+
+            .tn-icon {
+                opacity: 1;
+                color: var(--link-color);
+            }
+        }
+    }
+
+    .page.tf-bring .tf-trilium-running {
+        margin-top: 1rem;
+
+        p {
+            margin: 0 0 0.5rem;
+        }
+    }
+
+    .page.sync-in-progress {
+        .sync-steps .tn-card-section {
+            color: var(--muted-text-color);
+
+            &.active,
+            &.completed {
+                color: var(--main-text-color);
+            }
+
+            &.active > .tn-icon,
+            &.completed > .tn-icon {
+                color: var(--link-color);
+            }
+        }
+
+        .tn-progress-bar {
+            background-color: var(--main-border-color);
+
+            &::after {
+                background-color: var(--link-color);
+            }
+        }
+    }
+}
