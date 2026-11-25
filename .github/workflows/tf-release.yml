@@ -1,0 +1,480 @@
+# NoteForce engine builds: Trilium with the Taskforce patch stack (branch `tf/stack`).
+#
+# A run plans what to build (gate/plan.mjs), then for each target: installs, typechecks, runs the
+# tf specs and the upstream specs of every upstream file the stack hooks into, builds the server
+# (`apps/server/dist`, client included), writes `tf-version.json`, packages linux-x64 and
+# linux-arm64, starts each package exactly as the Taskforce notes gateway does and runs the gate
+# (gate/smoke.mjs; gate/client.mjs drives the embedded client in headless Chromium), and only
+# when everything passed publishes `v<upstream>-tf.<n>` with both tarballs and SHA256SUMS.
+#
+# Targets:
+# - stack: `tf/stack` as it is, whenever its commit has no release yet. A push to `tf/stack`
+#   starts this through `tf-stack-push.yml` on that branch (GitHub runs push workflows from the
+#   pushed commit, so the trigger has to live there); the hourly run catches any push the trigger
+#   missed.
+# - next (the daily run): the stack rebased onto upstream's newest STABLE tag when that is newer
+#   than the stack's base. Passing: a prerelease "candidate for a new upstream version", a
+#   `tf/next-<tag>` branch and an issue saying it is ready. Failing: one issue per upstream tag
+#   with the conflicting files or the failing check. Taskforce never installs a newer upstream
+#   version by itself: upstream database migrations are one-way, so a person switches.
+#
+# Taskforce installs only what is published here, and still tries each new build for a day
+# before people get it (apps/worker/src/tasks/notes-engine.ts in Taskforce).
+name: tf-release
+
+on:
+  schedule:
+    - cron: "17 * * * *" # hourly: tf/stack released?
+    - cron: "41 4 * * *" # daily: upstream watch as well
+  workflow_dispatch:
+    inputs:
+      force:
+        description: "Build the stack even when its commit already has a release"
+        type: boolean
+        default: false
+      watch:
+        description: "Also look for a newer upstream version now"
+        type: boolean
+        default: false
+      watch_tag:
+        description: "Upstream tag to treat as the newest (any tag, also an rc; for testing the watch)"
+        required: false
+  workflow_call:
+
+permissions:
+  contents: write
+  issues: write
+
+concurrency:
+  group: tf-release
+  cancel-in-progress: false
+
+env:
+  UPSTREAM: TriliumNext/Trilium
+  STACK_BRANCH: tf/stack
+  CI_BRANCH: tf/ci
+  KEEP_RELEASES: "10"
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    outputs:
+      targets: ${{ steps.plan.outputs.targets }}
+      gates: ${{ steps.plan.outputs.gates }}
+      prev_tag: ${{ steps.plan.outputs.prev_tag }}
+      node: ${{ steps.plan.outputs.node }}
+      stack: ${{ steps.plan.outputs.stack }}
+      any: ${{ steps.plan.outputs.any }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ env.CI_BRANCH }}
+          persist-credentials: false
+      - id: plan
+        env:
+          GH_TOKEN: ${{ github.token }}
+          FORCE: ${{ inputs.force || 'false' }}
+          WATCH: ${{ (github.event_name == 'schedule' && github.event.schedule == '41 4 * * *') || inputs.watch || 'false' }}
+          WATCH_TAG: ${{ inputs.watch_tag }}
+        run: node gate/plan.mjs
+
+  build:
+    needs: plan
+    if: needs.plan.outputs.any == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        target: ${{ fromJSON(needs.plan.outputs.targets) }}
+    env:
+      NAME: ${{ matrix.target.name }}
+      ONTO: ${{ matrix.target.onto }}
+      BASE: ${{ matrix.target.base }}
+      VERSION: ${{ matrix.target.version }}
+      STACK: ${{ needs.plan.outputs.stack }}
+      ELECTRON_SKIP_BINARY_DOWNLOAD: "1"
+      PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: "1"
+    steps:
+      - name: Gate scripts (tf/ci)
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ env.CI_BRANCH }}
+          path: ci
+          persist-credentials: false
+
+      - name: Patch stack with history
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.plan.outputs.stack }}
+          path: src
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Upstream tags (and the rebase onto a newer one)
+        id: rebase
+        working-directory: src
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/result"
+          git config user.name "tf-release"
+          git config user.email "tf-release@users.noreply.github.com"
+          git remote add upstream "https://github.com/$UPSTREAM"
+          git fetch --no-tags upstream "refs/tags/$BASE:refs/tags/$BASE"
+          if [ -z "$ONTO" ]; then echo "building tf/stack $STACK as it is"; exit 0; fi
+          git fetch --no-tags upstream "refs/tags/$ONTO:refs/tags/$ONTO"
+          fork=$(git merge-base "$STACK" "$BASE")
+          git checkout -q -B "tf/next-$ONTO" "$STACK"
+          if ! git rebase --onto "$ONTO" "$fork" "tf/next-$ONTO" > "$RUNNER_TEMP/rebase.log" 2>&1; then
+            cat "$RUNNER_TEMP/rebase.log"
+            patch=$(git log -1 --format='%h %s' REBASE_HEAD 2>/dev/null || echo unknown)
+            files=$(git diff --name-only --diff-filter=U | jq -R . | jq -s .)
+            jq -n --arg patch "$patch" --argjson files "$files" '{ok:false, stage:"rebase", patch:$patch, conflicts:$files}' > "$RUNNER_TEMP/result/build-$NAME.json"
+            git rebase --abort || true
+            echo "::error::the stack does not apply to $ONTO: $(echo "$files" | jq -r 'join(", ")')"
+            exit 1
+          fi
+          git log --oneline "$ONTO..HEAD"
+          git bundle create "$RUNNER_TEMP/tf-next-$ONTO.bundle" "tf/next-$ONTO"
+          echo "rebased=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+        with:
+          package_json_file: src/package.json
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: src/.nvmrc
+          cache: pnpm
+          cache-dependency-path: src/pnpm-lock.yaml
+
+      - name: Install
+        id: install
+        working-directory: src
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck
+        id: typecheck
+        working-directory: src
+        run: pnpm typecheck
+
+      - name: Which specs (tf + upstream files the stack touches)
+        id: specs
+        run: node ci/gate/tf-specs.mjs --src src --base "${ONTO:-$BASE}" --github-output "$GITHUB_OUTPUT"
+
+      - name: Specs, server (tf, core on Node, upstream specs of touched files)
+        id: test_server
+        working-directory: src
+        run: pnpm --filter server exec vitest run ${{ steps.specs.outputs.server_args }}
+
+      - name: Specs, standalone (core on SQLite WASM)
+        id: test_standalone
+        working-directory: src
+        run: pnpm --filter standalone exec vitest run ${{ steps.specs.outputs.standalone_args }}
+
+      - name: Specs, client
+        id: test_client
+        working-directory: src
+        run: pnpm --filter @triliumnext/client exec vitest run ${{ steps.specs.outputs.client_args }}
+
+      - name: Build the server (client included)
+        id: build
+        working-directory: src
+        run: |
+          set -euo pipefail
+          pnpm run chore:update-build-info
+          pnpm server:build
+          test -f apps/server/dist/main.mjs
+
+      - name: tf-version.json
+        id: version
+        run: node ci/gate/write-version.mjs --dist src/apps/server/dist --version "$VERSION" --commit "${{ steps.rebase.outputs.rebased || needs.plan.outputs.stack }}"
+
+      - name: Gate scripts' browser
+        run: cd ci/gate && npm ci --no-audit --no-fund
+
+      # The stack's own host page and phone checks (scripts/tf-dev-host.mjs, scripts/tf-phone-check.mjs).
+      # Not on every stack yet: when they are on the branch they must pass.
+      - name: Host page and phone checks of the stack (when on the branch)
+        id: phone
+        working-directory: src
+        env:
+          TF_PUPPETEER_FROM: ${{ github.workspace }}/ci/gate/package.json
+        run: |
+          set -euo pipefail
+          if [ ! -f scripts/tf-dev-host.mjs ] || [ ! -f scripts/tf-phone-check.mjs ]; then
+            echo "::notice title=phone checks::scripts/tf-dev-host.mjs or scripts/tf-phone-check.mjs is not on this stack; skipped"
+            exit 0
+          fi
+          export PUPPETEER_EXECUTABLE_PATH="$(command -v google-chrome || command -v chromium)"
+          node scripts/tf-dev-host.mjs --fresh --data "$RUNNER_TEMP/tf-dev-host" > "$RUNNER_TEMP/tf-dev-host.log" 2>&1 &
+          host=$!
+          for i in $(seq 1 120); do
+            if curl -fsS -o /dev/null http://127.0.0.1:9783/; then break; fi
+            if ! kill -0 "$host" 2>/dev/null; then cat "$RUNNER_TEMP/tf-dev-host.log"; exit 1; fi
+            sleep 1
+          done
+          status=0
+          node scripts/tf-phone-check.mjs || status=$?
+          kill "$host" || true
+          if [ "$status" != 0 ]; then tail -50 "$RUNNER_TEMP/tf-dev-host.log"; fi
+          exit "$status"
+
+      - name: Package linux-x64 and linux-arm64
+        id: package
+        run: |
+          set -euo pipefail
+          out="$RUNNER_TEMP/engine"
+          mkdir -p "$out"
+          dist=src/apps/server/dist
+          # The server build keeps only the host's SQLite binding (linux-x64, glibc and musl). The
+          # rest of the build is the same for both: arm64 gets its own binding from the package.
+          pkg=$(cd src/apps/server && node -p "require('path').dirname(require.resolve('better-sqlite3/package.json'))")
+          ls "$pkg/prebuilds"
+          rm -rf "$RUNNER_TEMP/arm64" && cp -a "$dist" "$RUNNER_TEMP/arm64"
+          rm -f "$RUNNER_TEMP/arm64/node_modules/better-sqlite3/prebuilds/"*.node
+          cp "$pkg/prebuilds/linux-arm64.node" "$pkg/prebuilds/linuxmusl-arm64.node" "$RUNNER_TEMP/arm64/node_modules/better-sqlite3/prebuilds/"
+          test -f "$dist/node_modules/better-sqlite3/prebuilds/linux-x64.node"
+          tar -C "$dist" --owner=0 --group=0 --numeric-owner -czf "$out/noteforce-engine-$VERSION-linux-x64.tar.gz" .
+          tar -C "$RUNNER_TEMP/arm64" --owner=0 --group=0 --numeric-owner -czf "$out/noteforce-engine-$VERSION-linux-arm64.tar.gz" .
+          if [ -f "$RUNNER_TEMP/tf-next-$ONTO.bundle" ]; then cp "$RUNNER_TEMP/tf-next-$ONTO.bundle" "$out/"; fi
+          ls -la "$out"
+
+      - name: Build result
+        if: always()
+        env:
+          STEPS: ${{ toJSON(steps) }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/result"
+          f="$RUNNER_TEMP/result/build-$NAME.json"
+          [ -f "$f" ] && exit 0
+          jq -n --arg status "${{ job.status }}" --argjson steps "$STEPS" \
+            '{ok: ($status == "success"), stage: ([$steps | to_entries[] | select(.value.outcome == "failure") | .key][0] // null), rebased: ($steps.rebase.outputs.rebased // null)}' > "$f"
+          cat "$f"
+
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: build-${{ matrix.target.name }}
+          path: ${{ runner.temp }}/result/build-${{ matrix.target.name }}.json
+          retention-days: 14
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: engine-${{ matrix.target.name }}
+          path: ${{ runner.temp }}/engine/
+          retention-days: 14
+          compression-level: 0
+
+  gate:
+    needs: [plan, build]
+    if: always() && needs.plan.outputs.any == 'true'
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJSON(needs.plan.outputs.gates) }}
+    env:
+      TARGET: ${{ matrix.target }}
+      ARCH: ${{ matrix.arch }}
+      PREV_TAG: ${{ needs.plan.outputs.prev_tag }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ env.CI_BRANCH }}
+          persist-credentials: false
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ needs.plan.outputs.node }}
+
+      - uses: actions/download-artifact@v8
+        id: engine
+        continue-on-error: true
+        with:
+          name: engine-${{ matrix.target }}
+          path: ${{ runner.temp }}/engine
+
+      - name: Unpack this build
+        id: unpack
+        run: |
+          set -euo pipefail
+          tarball=$(ls "$RUNNER_TEMP"/engine/noteforce-engine-*-linux-"$ARCH".tar.gz)
+          mkdir -p "$RUNNER_TEMP/new" && tar -xzf "$tarball" -C "$RUNNER_TEMP/new"
+          du -sh "$RUNNER_TEMP/new"
+
+      # A database made by the build people have now must open in this one.
+      - name: Previous released build
+        id: prev
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if [ -z "$PREV_TAG" ]; then echo "no earlier release: first build"; exit 0; fi
+          mkdir -p "$RUNNER_TEMP/prev-dl" "$RUNNER_TEMP/prev"
+          gh release download "$PREV_TAG" --repo "$GITHUB_REPOSITORY" --dir "$RUNNER_TEMP/prev-dl" --pattern "noteforce-engine-*-linux-$ARCH.tar.gz" --pattern SHA256SUMS
+          (cd "$RUNNER_TEMP/prev-dl" && sha256sum -c --ignore-missing SHA256SUMS)
+          tar -xzf "$RUNNER_TEMP"/prev-dl/noteforce-engine-*-linux-"$ARCH".tar.gz -C "$RUNNER_TEMP/prev"
+          echo "dir=$RUNNER_TEMP/prev" >> "$GITHUB_OUTPUT"
+          echo "previous build: $PREV_TAG"
+
+      - name: Engine gate (as the gateway starts it)
+        id: smoke
+        run: node gate/smoke.mjs --engine "$RUNNER_TEMP/new" --platform "linux-$ARCH" --json "$RUNNER_TEMP/smoke.json" ${{ steps.prev.outputs.dir && format('--prev "{0}"', steps.prev.outputs.dir) || '' }}
+
+      - name: Embedded client in headless Chromium
+        id: client
+        if: matrix.arch == 'x64'
+        run: |
+          set -euo pipefail
+          cd gate && npm ci --no-audit --no-fund && cd ..
+          CHROME_PATH="$(command -v google-chrome || command -v chromium)" node gate/client.mjs --engine "$RUNNER_TEMP/new" --json "$RUNNER_TEMP/client.json"
+
+      - name: Gate result
+        if: always()
+        run: |
+          set -u
+          mkdir -p "$RUNNER_TEMP/result"
+          smoke='null'; client='null'
+          [ -f "$RUNNER_TEMP/smoke.json" ] && smoke=$(cat "$RUNNER_TEMP/smoke.json")
+          [ -f "$RUNNER_TEMP/client.json" ] && client=$(cat "$RUNNER_TEMP/client.json")
+          jq -n --arg status "${{ job.status }}" --arg arch "$ARCH" --argjson smoke "$smoke" --argjson client "$client" \
+            '{ok: ($status == "success"), arch: $arch, checks: ((($smoke // {}).checks // []) + ((($client // {}).checks // []) | map(.name = "client: " + .name)))}' \
+            > "$RUNNER_TEMP/result/gate-$TARGET-$ARCH.json"
+          jq -c '{ok, arch, failed: [.checks[] | select(.ok | not) | .name]}' "$RUNNER_TEMP/result/gate-$TARGET-$ARCH.json"
+
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: gate-${{ matrix.target }}-${{ matrix.arch }}
+          path: ${{ runner.temp }}/result/gate-${{ matrix.target }}-${{ matrix.arch }}.json
+          retention-days: 14
+
+  publish:
+    needs: [plan, build, gate]
+    if: always() && needs.plan.outputs.any == 'true'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        target: ${{ fromJSON(needs.plan.outputs.targets) }}
+    env:
+      GH_TOKEN: ${{ github.token }}
+      NAME: ${{ matrix.target.name }}
+      VERSION: ${{ matrix.target.version }}
+      TAG: ${{ matrix.target.tag }}
+      ONTO: ${{ matrix.target.onto }}
+      BASE: ${{ matrix.target.base }}
+      KEY: ${{ matrix.target.key }}
+      PRERELEASE: ${{ matrix.target.prerelease }}
+      STACK: ${{ needs.plan.outputs.stack }}
+      RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ env.CI_BRANCH }}
+          persist-credentials: false
+
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: "{build,gate}-${{ matrix.target.name }}*"
+          path: ${{ runner.temp }}/result
+          merge-multiple: true
+
+      - name: Did everything pass?
+        id: verdict
+        run: |
+          set -euo pipefail
+          r="$RUNNER_TEMP/result"
+          ls -la "$r" || true
+          ok=true
+          [ "$(jq -r .ok "$r/build-$NAME.json" 2>/dev/null)" = "true" ] || ok=false
+          for arch in x64 arm64; do
+            [ "$(jq -r .ok "$r/gate-$NAME-$arch.json" 2>/dev/null)" = "true" ] || ok=false
+          done
+          echo "ok=$ok" >> "$GITHUB_OUTPUT"
+          node gate/report.mjs --dir "$r" --name "$NAME" > "$RUNNER_TEMP/report.md"
+          cat "$RUNNER_TEMP/report.md"
+
+      - uses: actions/download-artifact@v8
+        if: steps.verdict.outputs.ok == 'true'
+        with:
+          name: engine-${{ matrix.target.name }}
+          path: ${{ runner.temp }}/engine
+
+      # The candidate branch for a new upstream version. The default token may not create or change
+      # files under .github/workflows (GitHub refuses that for every app token), and upstream
+      # changes its workflows between releases, so this push can be refused: the bundle on the
+      # prerelease then carries the exact commits.
+      - name: Push tf/next-${{ matrix.target.onto }}
+        id: branch
+        if: steps.verdict.outputs.ok == 'true' && matrix.target.name == 'next'
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          git init -q "$RUNNER_TEMP/next" && cd "$RUNNER_TEMP/next"
+          git fetch -q "$RUNNER_TEMP/engine/tf-next-$ONTO.bundle" "tf/next-$ONTO:tf/next-$ONTO"
+          auth=$(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)
+          git -c http.extraheader="AUTHORIZATION: basic $auth" push --force "https://github.com/$GITHUB_REPOSITORY" "tf/next-$ONTO:refs/heads/tf/next-$ONTO" 2>&1 | tee "$RUNNER_TEMP/push.log"
+          echo "sha=$(git rev-parse "tf/next-$ONTO")" >> "$GITHUB_OUTPUT"
+
+      - name: Publish
+        id: publish
+        if: steps.verdict.outputs.ok == 'true'
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP/engine"
+          sha256sum noteforce-engine-*.tar.gz $( [ -f "tf-next-$ONTO.bundle" ] && echo "tf-next-$ONTO.bundle" ) > SHA256SUMS
+          cat SHA256SUMS
+          rebased=$(jq -r '.rebased // empty' "$RUNNER_TEMP/result/build-$NAME.json")
+          source_sha="${rebased:-$STACK}"
+          target="$STACK"
+          if [ "$NAME" = next ] && [ -n "${{ steps.branch.outputs.sha }}" ]; then target="${{ steps.branch.outputs.sha }}"; fi
+          {
+            if [ "$NAME" = next ]; then
+              echo "**Candidate for a new upstream version.** Trilium ${ONTO} with the Taskforce patch stack, rebased and gated."
+              echo "Taskforce does not install it: switching \`tf/stack\` to ${ONTO} is a person's decision (upstream database migrations are one-way)."
+            else
+              echo "NoteForce engine ${VERSION}: Trilium ${BASE} with the Taskforce patch stack."
+            fi
+            echo
+            echo "Source (AGPL-3.0): https://github.com/${GITHUB_REPOSITORY}/tree/${source_sha} (commit \`${source_sha}\`)."
+            if [ "$NAME" = next ] && [ "$target" != "$source_sha" ]; then
+              echo "That commit is in \`tf-next-${ONTO}.bundle\` attached here (\`git fetch tf-next-${ONTO}.bundle tf/next-${ONTO}\`); the branch could not be pushed by the workflow."
+            fi
+            echo "Upstream: https://github.com/${UPSTREAM}/releases/tag/${ONTO:-$BASE}"
+            echo "Built and gated by ${RUN_URL}"
+            echo
+            cat "$RUNNER_TEMP/report.md"
+            echo
+            echo "${KEY}"
+          } > "$RUNNER_TEMP/notes.md"
+          flags=(--latest)
+          if [ "$PRERELEASE" = true ]; then flags=(--prerelease --latest=false); fi
+          gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --target "$target" --title "$TAG" --notes-file "$RUNNER_TEMP/notes.md" "${flags[@]}" \
+            noteforce-engine-*.tar.gz SHA256SUMS $( [ -f "tf-next-$ONTO.bundle" ] && echo "tf-next-$ONTO.bundle" )
+          # The asset names are the names in SHA256SUMS; GitHub must not have renamed one.
+          gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json assets -q '.assets[] | "\(.name) \(.size)"' | tee "$RUNNER_TEMP/assets.txt"
+          for f in $(awk '{print $2}' SHA256SUMS); do grep -q "^$f " "$RUNNER_TEMP/assets.txt" || { echo "::error::asset $f was renamed on upload"; exit 1; }; done
+          echo "url=$(gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json url -q .url)" >> "$GITHUB_OUTPUT"
+
+      - name: Keep the newest releases
+        if: steps.publish.outcome == 'success' && matrix.target.name == 'stack'
+        run: |
+          gh api "repos/$GITHUB_REPOSITORY/releases?per_page=100" -q '[.[] | select(.prerelease | not) | select(.tag_name | test("^v[0-9]+\\.[0-9]+\\.[0-9]+-tf\\.[0-9]+$"))] | .[].tag_name' \
+            | sort -V -r | tail -n +"$((KEEP_RELEASES + 1))" \
+            | while read -r old; do gh release delete "$old" --repo "$GITHUB_REPOSITORY" --yes --cleanup-tag || true; done
+
+      - name: Report on the upstream version (one issue per tag)
+        if: always() && matrix.target.name == 'next'
+        env:
+          OK: ${{ steps.verdict.outputs.ok }}
+          RELEASE_URL: ${{ steps.publish.outputs.url }}
+          BRANCH_SHA: ${{ steps.branch.outputs.sha }}
+        run: node gate/issue.mjs --report "$RUNNER_TEMP/report.md" --build "$RUNNER_TEMP/result/build-$NAME.json"
+
+      - name: Fail the run when the stack build did not pass
+        if: matrix.target.name == 'stack' && steps.verdict.outputs.ok != 'true'
+        run: |
+          echo "::error::nothing published: the build or the gate failed (see the report above)"
+          exit 1

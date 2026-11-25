@@ -1,0 +1,8 @@
+{
+  "name": "noteforce-tf-gate",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "puppeteer-core": "24.43.1"
+  }
+}
