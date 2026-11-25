@@ -107,7 +107,8 @@ if (WATCH || WATCH_TAG) {
         notes.push(`upstream's newest stable tag ${tag} is not newer than the stack's v${base}`);
     } else {
         const upstream = tag.replace(/^v/, "");
-        const key = `upstream=${tag} stack=${stack}`;
+        // Its own key form: never a substring of a stack release's `upstream=… stack=…`.
+        const key = `onto=${tag} stack=${stack}`;
         const issues = await all(`repos/${REPO}/issues?state=open`, 2).catch(() => []);
         const reported = issues.some((i) => !i.pull_request && i.title.startsWith(`Upstream ${tag}:`) && (i.body ?? "").includes(key) && !i.title.includes("ready to switch"));
         if (released(key)) notes.push(`${tag} with this stack is published as a candidate already`);

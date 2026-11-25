@@ -3,7 +3,7 @@
 //
 //   node gate/issue.mjs --report <report.md> --build <build-next.json>
 //
-// Env: GH_TOKEN, GITHUB_REPOSITORY, ONTO (upstream tag), KEY (`upstream=<tag> stack=<sha>`), OK,
+// Env: GH_TOKEN, GITHUB_REPOSITORY, ONTO (upstream tag), KEY (`onto=<tag> stack=<sha>`), OK,
 // RELEASE_URL, BRANCH_SHA, RUN_URL, TAG (the prerelease tag).
 import { existsSync, readFileSync } from "node:fs";
 
