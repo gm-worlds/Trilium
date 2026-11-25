@@ -7,10 +7,11 @@ import path, { join } from "path";
 
 import packageJson from "../package.json" with { type: "json" };
 import { PRODUCT_NAME } from "../src/app-info.js";
+import { tfDesktopPackagerConfig, TF_DESKTOP_EXECUTABLE_NAME } from "./tf-desktop.js"; // tf:
 
 const ELECTRON_FORGE_DIR = __dirname;
 
-const EXECUTABLE_NAME = "trilium"; // keep in sync with server's package.json -> packagerConfig.executableName
+const EXECUTABLE_NAME = TF_DESKTOP_EXECUTABLE_NAME ?? "trilium"; // keep in sync with server's package.json -> packagerConfig.executableName; tf: Taskforce Notes has its own
 const APP_ICON_PATH = path.join(ELECTRON_FORGE_DIR, "app-icon");
 
 const extraResourcesForPlatform = getExtraResourcesForPlatform();
@@ -56,6 +57,7 @@ const config: ForgeConfig = {
             ...(process.platform === "darwin" ? [] : extraResourcesForPlatform)
         ],
         prune: false,
+        ...tfDesktopPackagerConfig(), // tf: Taskforce Notes: bundle id, build number, URL scheme, signing
         afterComplete: [
             ({ buildPath, platform }) => {
                 // Only move resources on non-macOS platforms
