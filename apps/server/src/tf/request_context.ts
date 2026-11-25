@@ -15,7 +15,7 @@ import type express from "express";
 import type { IncomingMessage } from "http";
 
 import { getTfGatewayKey } from "./env.js";
-import { decideTfRoute } from "./route_policy.js";
+import { decideTfRoute, type TfChannel } from "./route_policy.js";
 
 const HEALTH_CHECK_PATH = "/api/health-check";
 const tfUsers = new WeakMap<IncomingMessage, TfUser | null>();
@@ -39,7 +39,7 @@ export function tfGatewayGuard(req: express.Request, res: express.Response, next
         return;
     }
 
-    const decision = decideTfRoute(req.originalUrl || req.url, user?.role ?? null);
+    const decision = decideTfRoute(req.originalUrl || req.url, user?.role ?? null, tfChannelOf(req));
     if (decision === "refuse") {
         res.status(404).type("text/plain").send("Not found");
         return;
@@ -55,7 +55,7 @@ export function tfGatewayGuard(req: express.Request, res: express.Response, next
 
 /** Same check for a WebSocket upgrade, which never passes through the Express middleware. */
 export function verifyTfUpgrade(req: IncomingMessage): boolean {
-    if (!hasValidGatewayKey(req)) {
+    if (!hasValidGatewayKey(req) || tfChannelOf(req) !== null) {
         return false;
     }
 
@@ -111,6 +111,13 @@ export function hasValidGatewayKey(req: IncomingMessage) {
     const a = createHash("sha256").update(given).digest();
     const b = createHash("sha256").update(expected).digest();
     return timingSafeEqual(a, b);
+}
+
+/** `sync` when the gateway marks the request as a desktop app's sync (only valid with its key). */
+export function tfChannelOf(req: IncomingMessage): TfChannel {
+    const header = req.headers["x-tf-channel"];
+    const value = Array.isArray(header) ? header[0] : header;
+    return value === "sync" ? "sync" : null;
 }
 
 function isLoopback(address: string | undefined) {

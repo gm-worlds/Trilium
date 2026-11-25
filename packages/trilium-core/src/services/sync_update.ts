@@ -10,6 +10,7 @@ import entity_constructor from "../becca/entity_constructor.js";
 import { decodeBase64, decodeBase64Into } from "./utils/binary.js";
 import dateUtils from "./utils/date.js";
 import { isTfDesktopOptionChange } from "../tf/desktop.js"; // tf: the desktop app's device key
+import { tfAcceptSyncedEntity, tfAfterSyncedEntity, tfBeforeSyncedEntity } from "../tf/sync.js"; // tf:
 
 interface UpdateContext {
     alreadyErased: number;
@@ -58,6 +59,8 @@ function updateEntity(remoteEC: EntityChange, remoteEntityRow: EntityRow | undef
         return; // can be undefined for options with isSynced=false
     }
 
+    if (!tfAcceptSyncedEntity(remoteEC, remoteEntityRow)) return entityChangesService.putEntityChangeWithInstanceId(remoteEC, instanceId); // tf: host-managed row, change kept so hashes match
+    const tfBefore = tfBeforeSyncedEntity(remoteEC); // tf:
     const updated = remoteEC.entityName === "note_reordering"
         ? updateNoteReordering(remoteEC, remoteEntityRow, instanceId)
         : updateNormalEntity(remoteEC, remoteEntityRow, instanceId, updateContext);
@@ -75,6 +78,7 @@ function updateEntity(remoteEC: EntityChange, remoteEntityRow: EntityRow | undef
                 entityRow: remoteEntityRow
             });
         }
+        tfAfterSyncedEntity(remoteEC, remoteEntityRow, tfBefore); // tf: change events
     }
 }
 

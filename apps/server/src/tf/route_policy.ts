@@ -68,7 +68,23 @@ export const TF_VIEWER_REFUSED_ROUTES: readonly RegExp[] = [
     /^\/api\/notes\/[^/]+\/(notes-import|attachments-import|attachments\/upload)$/
 ];
 
+/**
+ * The only routes the sync channel reaches (`x-tf-channel: sync`, set by the gateway for a
+ * desktop app's device): Trilium's sync login and the sync protocol. `:x` is one segment.
+ */
+export const TF_SYNC_ROUTES: readonly string[] = [
+    "/api/login/sync",
+    "/api/sync/check",
+    "/api/sync/changed",
+    "/api/sync/update",
+    "/api/sync/finished",
+    "/api/sync/check-entity-changes",
+    "/api/sync/queue-sector/:x/:x"
+];
+
 export type TfRouteDecision = "allow" | "refuse" | "read-only";
+
+export type TfChannel = "sync" | null;
 
 /** The canonical form of the path of `url` (query and fragment dropped), or `null` when it is malformed. */
 export function canonicalTfPath(url: string): string | null {
@@ -127,10 +143,14 @@ export const TF_GATEWAY_ONLY_ROUTES = new Set([ "/api/setup/status", "/api/setup
  * What an embedded engine does with a request for `url` from someone with `role`; `null` is
  * the gateway's own call, without a person.
  */
-export function decideTfRoute(url: string, role: "edit" | "view" | null): TfRouteDecision {
+export function decideTfRoute(url: string, role: "edit" | "view" | null, channel: TfChannel = null): TfRouteDecision {
     const path = canonicalTfPath(url);
     if (path === null) {
         return "refuse";
+    }
+
+    if (channel === "sync") {
+        return role === "edit" && TF_SYNC_ROUTES.some((pattern) => matchesSegments(path, pattern)) ? "allow" : "refuse";
     }
 
     if (role === null && TF_GATEWAY_ONLY_ROUTES.has(path)) {
@@ -157,4 +177,10 @@ function matchesPrefix(path: string, prefix: string) {
         return path.startsWith(prefix.slice(0, -1));
     }
     return path === prefix || path.startsWith(`${prefix}/`);
+}
+
+function matchesSegments(path: string, pattern: string) {
+    const a = path.split("/");
+    const b = pattern.split("/");
+    return a.length === b.length && b.every((segment, index) => segment === ":x" ? a[index] !== "" : segment === a[index]);
 }
