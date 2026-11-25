@@ -10,6 +10,8 @@ import fs from "node:fs";
 import os from "node:os";
 import { dirname, join as pathJoin } from "node:path";
 
+import { claimTfDesktopEnv } from "../tf/desktop_env.js"; // tf: Taskforce Notes has its own data folder
+
 const DIR_NAME = "trilium-data";
 const FOLDER_PERMISSIONS = 0o700;
 
@@ -283,6 +285,7 @@ function createDirIfNotExisting(path: fs.PathLike, dataDir?: string) {
     }
 }
 
+claimTfDesktopEnv(); // tf: before anything is resolved, Taskforce Notes points TRILIUM_DATA_DIR at its own folder
 const TRILIUM_DATA_DIR = getTriliumDataDir(DIR_NAME);
 const dataDirs = getDataDirs(TRILIUM_DATA_DIR);
 

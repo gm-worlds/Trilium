@@ -73,6 +73,7 @@ function generatePackageJson() {
         name: "trilium",
         main: "main.mjs",
         version, author, license, description,
+        ...tfDesktopPackageFields(), // tf: Taskforce Notes builds name the app after themselves
         dependencies: {
             "better-sqlite3": dependencies["better-sqlite3"],
         },
@@ -84,6 +85,13 @@ function generatePackageJson() {
         }
     };
     writeFileSync(join(build.outDir, "package.json"), JSON.stringify(packageJson, null, "\t"), "utf-8");
+}
+
+/** tf: `app.getName()` reads `productName`; Taskforce Notes keeps its name apart from Trilium's. */
+function tfDesktopPackageFields() {
+    return process.env.TF_DESKTOP === "1"
+        ? { name: "taskforce-notes", productName: "Taskforce Notes", description: "Taskforce Notes, Trilium Notes synced with a Taskforce notebook" }
+        : {};
 }
 
 main();

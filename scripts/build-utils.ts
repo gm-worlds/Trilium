@@ -107,6 +107,7 @@ export default class BuildHelper {
             },
             define: {
                 "process.env.NODE_ENV": JSON.stringify("production"),
+                ...tfDesktopDefines(), // tf: the Taskforce Notes flavour is baked into the build
                 // CJS output has no `import.meta`, so esbuild rewrites
                 // `import.meta.url` to `{}` (→ undefined). Bundled ESM deps
                 // (e.g. @anthropic-ai/claude-agent-sdk) call
@@ -321,4 +322,14 @@ function tryPath(paths: string[]) {
 
     console.error("Unable to find any of the paths:", paths);
     process.exit(1);
+}
+
+/**
+ * tf: `TF_DESKTOP`, `TF_DESKTOP_BUILD` and `TF_DESKTOP_VERSION` of the build environment, baked
+ * into the bundle so a packaged app cannot be switched by its own environment. Empty in an
+ * upstream build, which therefore stays upstream's whatever the environment says later.
+ */
+function tfDesktopDefines() {
+    return Object.fromEntries([ "TF_DESKTOP", "TF_DESKTOP_BUILD", "TF_DESKTOP_VERSION" ]
+        .map((name) => [ `process.env.${name}`, JSON.stringify(process.env[name] ?? "") ]));
 }
