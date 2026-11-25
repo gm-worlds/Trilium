@@ -416,13 +416,24 @@ jobs:
       # files under .github/workflows (GitHub refuses that for every app token), and upstream
       # changes its workflows between releases, so this push can be refused: the bundle on the
       # prerelease then carries the exact commits.
+      # The bundle holds only the stack's commits: the history under them comes from here and upstream.
+      - name: Stack history for the branch
+        if: steps.verdict.outputs.ok == 'true' && matrix.target.name == 'next'
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.plan.outputs.stack }}
+          path: next
+          fetch-depth: 0
+          persist-credentials: false
+
       - name: Push tf/next-${{ matrix.target.onto }}
         id: branch
         if: steps.verdict.outputs.ok == 'true' && matrix.target.name == 'next'
         continue-on-error: true
+        working-directory: next
         run: |
           set -euo pipefail
-          git init -q "$RUNNER_TEMP/next" && cd "$RUNNER_TEMP/next"
+          git fetch -q --no-tags "https://github.com/$UPSTREAM" "refs/tags/$ONTO:refs/tags/$ONTO"
           git fetch -q "$RUNNER_TEMP/engine/tf-next-$ONTO.bundle" "tf/next-$ONTO:tf/next-$ONTO"
           auth=$(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)
           git -c http.extraheader="AUTHORIZATION: basic $auth" push --force "https://github.com/$GITHUB_REPOSITORY" "tf/next-$ONTO:refs/heads/tf/next-$ONTO" 2>&1 | tee "$RUNNER_TEMP/push.log"
