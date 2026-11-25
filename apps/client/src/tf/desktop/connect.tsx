@@ -27,6 +27,7 @@ import FormTextBox from "../../widgets/react/FormTextBox";
 import Icon from "../../widgets/react/Icon";
 import ProgressBar from "../../widgets/react/ProgressBar";
 import SetupPage from "../../widgets/react/SetupPage";
+import { choiceProps } from "./choice";
 import { getTfDesktopApi, tt } from "./state";
 
 type Screen =
@@ -321,7 +322,8 @@ function BringScreen({ api, check, stock, error, onBack, onStock, onBring, onSki
             <div class="setup-options">
                 <CardFrame
                     className={clsx("setup-option-card", { disabled: !found || running })}
-                    onClick={found && !running ? onBring : undefined}
+                    {...choiceProps(found && !running ? onBring : undefined)}
+                    data-testid="tf-bring-option"
                 >
                     <Icon icon="bx bx-import" />
                     <div>
@@ -329,7 +331,7 @@ function BringScreen({ api, check, stock, error, onBack, onStock, onBring, onSki
                         <p>{found ? tt("bring_option_size", { size: formatSize(stock?.sizeBytes ?? 0) }) : tt("bring_none")}</p>
                     </div>
                 </CardFrame>
-                <CardFrame className="setup-option-card" onClick={onSkip}>
+                <CardFrame className="setup-option-card" {...choiceProps(onSkip)} data-testid="tf-bring-skip">
                     <Icon icon="bx bx-link" />
                     <div>
                         <h3>{tt("bring_skip")}</h3>
